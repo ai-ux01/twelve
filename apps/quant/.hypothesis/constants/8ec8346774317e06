@@ -1,0 +1,4 @@
+# file: /Users/anshulkumar/Desktop/twelve/apps/quant/calculators/rsi.py
+# hypothesis_version: 6.141.1
+
+[0.0, 1.0, 100.0, 'avg_gain', 'avg_loss', 'delta', 'gain', 'loss', 'price', 'rs', 'rsi']

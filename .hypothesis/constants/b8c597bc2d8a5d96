@@ -1,0 +1,4 @@
+# file: /Users/anshulkumar/Desktop/twelve/apps/quant/services/liquidity_analyzer.py
+# hypothesis_version: 6.141.1
+
+[0.0, 2.0, 5.0, 10.0, 100.0, 100, 500, 'Ask price', 'Average volume', 'Bid price', 'Deep OTM contracts', 'Last traded price', 'Low volume (< 100)', 'Open interest', 'Strike price', 'Trading volume']

@@ -1,0 +1,4 @@
+# file: /Users/anshulkumar/Desktop/twelve/apps/quant/calculators/trendlines.py
+# hypothesis_version: 6.141.1
+
+[0.01, 0.5, 0.7, 40.0, 'angle', 'data cannot be empty', 'is_valid', 'r_squared', 'slope', 'strength', 'touches', 'trendline']

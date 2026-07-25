@@ -1,0 +1,4 @@
+# file: /Users/anshulkumar/Desktop/twelve/apps/quant/calculators/price_action.py
+# hypothesis_version: 6.141.1
+
+[0.0, 0.001, 0.3, 0.6, 50.0, 100.0, 'confidence', 'higher_highs', 'higher_lows', 'index', 'lower_highs', 'lower_lows', 'price', 'trend_pattern']

@@ -1,0 +1,4 @@
+# file: /Users/anshulkumar/Desktop/twelve/apps/quant/services/intraday_scoring_service.py
+# hypothesis_version: 6.141.1
+
+[-5.0, -2.0, 0.0, 0.01, 0.05, 0.1, 0.15, 0.2, 0.25, 0.4, 0.5, 0.8, 1.0, 1.2, 1.5, 2.0, 3.0, 5.0, 6.67, 10.0, 20.0, 30.0, 33.33, 37.5, 40.0, 45.0, 50.0, 60.0, 65.0, 70.0, 75.0, 80.0, 85.0, 90.0, 95.0, 100.0, 100, 'MODERATE', 'STRONG', 'WEAK', 'momentum', 'opening_range', 'prev_day_levels', 'risk_reward', 'trend', 'volume', 'vwap']

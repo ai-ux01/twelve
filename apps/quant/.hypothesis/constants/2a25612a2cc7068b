@@ -1,0 +1,4 @@
+# file: /Users/anshulkumar/Desktop/twelve/apps/quant/calculators/price_range.py
+# hypothesis_version: 6.141.1
+
+[0.0, 50.0, 100.0, 365, 'current_price', 'high_52w', 'low_52w', 'momentum']

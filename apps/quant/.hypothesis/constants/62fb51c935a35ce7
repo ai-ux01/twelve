@@ -1,0 +1,4 @@
+# file: /Users/anshulkumar/Desktop/twelve/apps/quant/services/intraday_scoring_service.py
+# hypothesis_version: 6.141.1
+
+[0.0, 0.01, 0.1, 0.15, 0.2, 0.25, 0.3, 0.4, 0.5, 0.6, 0.8, 1.0, 1.2, 1.5, 2.0, 3.0, 30.0, 40.0, 50.0, 60.0, 70.0, 80.0, 85.0, 100.0, 100, 'MACD neutral', 'MODERATE', 'Price above EMA9', 'Price below EMA9', 'STRONG', 'WEAK', 'breakout', 'momentum', 'trend', 'volatility', 'volume']

@@ -1,0 +1,4 @@
+# file: /Users/anshulkumar/Desktop/twelve/apps/quant/calculators/trendline_validator.py
+# hypothesis_version: 6.141.1
+
+[0.0, 0.01, 0.5, 0.7, 1.0, 3.0, 10.0, 40.0, 100.0, 100, 'FLAT', 'MODERATE', 'STEEP', 'angle', 'data cannot be empty', 'is_valid', 'r_squared', 'slope', 'strength', 'touches']

@@ -1,0 +1,4 @@
+# file: /Users/anshulkumar/Desktop/twelve/apps/quant/services/swing_scanner_service.py
+# hypothesis_version: 6.141.1
+
+[0.0, 0.01, 0.97, 1.0, 1.06, 10.0, 30.0, 65.0, 68.0, 70.0, 200, 300, 400, 1000, '1d', 'Cache cleared', 'Number of cache hits', 'active_entries', 'breakout', 'breakout_type', 'cache_hits', 'cache_misses', 'candidates', 'candidates_found', 'confirmed', 'expired_entries', 'hit_rate', 'performance_metrics', 'total_entries', 'total_symbols', 'valid_symbols', 'volume_trend']

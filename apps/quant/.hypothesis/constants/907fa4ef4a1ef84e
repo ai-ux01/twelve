@@ -1,0 +1,4 @@
+# file: /Users/anshulkumar/Desktop/twelve/apps/quant/services/safety_controls.py
+# hypothesis_version: 6.141.1
+
+[0.0, 0.6, 0.7, 1.0, 2.0, 60.0, 100.0, 'AI_CONFIDENCE', 'AI_NO_TRADE_SIGNAL', 'APPROVED', 'BEAR_MARKET', 'DATA_COMPLETENESS', 'ERROR', 'MARKET_REGIME', 'NO_TRADE', 'REJECTED', 'RISK_REWARD_RATIO', 'Recommendation text', 'SCORE_THRESHOLD', 'WARNING', 'additional_context', 'ai_confidence', 'ai_signal', 'check', 'checks_performed', 'decision', 'error_violations', 'final_decision', 'has_trendlines', 'inputs', 'market_regime', 'passed', 'risk_reward_ratio', 'score', 'symbol', 'thresholds', 'timestamp', 'total_violations', 'trendline analysis', 'violation', 'warning_violations']

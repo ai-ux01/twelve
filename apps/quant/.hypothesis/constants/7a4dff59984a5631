@@ -1,0 +1,4 @@
+# file: /Users/anshulkumar/Desktop/twelve/apps/quant/calculators/breakout_detector.py
+# hypothesis_version: 6.141.1
+
+[0.0, 0.02, 0.5, 0.85, 1.0, 1.5, 3.0, 4.74, 4.88, 5.0, 15.0, 20.0, 25.0, 30.0, 75.0, 100.0, 103.0, 105.0, 108.0, 109.5, 110.0, 100, 'NO_BREAKOUT', 'NO_RETEST', 'RESISTANCE_BREAKOUT', 'SUPPORT_BREAKDOWN', 'breakout_index', 'breakout_price', 'breakout_type', 'confidence', 'confirmed', 'consolidation', 'data cannot be empty', 'detected', 'distance_percent', 'duration', 'end_index', 'examples', 'inf', 'is_tight', 'json_schema_extra', 'level', 'lower_bound', 'range_percent', 'range_size', 'retest_index', 'retest_price', 'retest_type', 'start_index', 'strength_score', 'trendline_price', 'upper_bound', 'volume_ratio']

@@ -1,0 +1,4 @@
+# file: /Users/anshulkumar/Desktop/twelve/apps/quant/services/options_chain_service.py
+# hypothesis_version: 6.141.1
+
+[0.07, 5.0, 100, 500, 'delta', 'expiry_date', 'gamma', 'option_type', 'strike_price', 'theta', 'vega', 'volatility']

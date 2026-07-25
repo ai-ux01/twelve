@@ -1,0 +1,225 @@
+"""
+Swing point detection calculator for the Quant Engine.
+
+This module implements swing high and swing low detection with configurable
+lookback periods. It also detects higher highs/higher lows (uptrend) and
+lower highs/lower lows (downtrend) patterns with confidence scoring.
+"""
+
+from typing import List
+from models import OHLCVData, SwingPoint, SwingType
+
+
+def detect_swing_points(
+    data: List[OHLCVData], lookback_period: int = 5
+) -> List[SwingPoint]:
+    """Detect all swing points (swing highs and swing lows) in price data."""
+    if not data:
+        raise ValueError("data cannot be empty")
+
+    if lookback_period < 1:
+        raise ValueError(f"lookback_period must be >= 1, got {lookback_period}")
+
+    if len(data) < 2 * lookback_period + 1:
+        raise ValueError(
+            f"Insufficient data points: {len(data)} < {2 * lookback_period + 1} "
+            f"(required for lookback_period={lookback_period})"
+        )
+
+    swing_points = []
+
+    for i in range(lookback_period, len(data) - lookback_period):
+        current_candle = data[i]
+
+        # Check for swing high
+        is_swing_high = True
+        for j in range(i - lookback_period, i + lookback_period + 1):
+            if j == i:
+                continue
+            if current_candle.high < data[j].high:
+                is_swing_high = False
+                break
+
+        if is_swing_high:
+            swing_points.append(
+                SwingPoint(
+                    timestamp=current_candle.timestamp,
+                    price=current_candle.high,
+                    type=SwingType.HIGH,
+                    index=i,
+                )
+            )
+
+        # Check for swing low
+        is_swing_low = True
+        for j in range(i - lookback_period, i + lookback_period + 1):
+            if j == i:
+                continue
+            if current_candle.low > data[j].low:
+                is_swing_low = False
+                break
+
+        if is_swing_low:
+            swing_points.append(
+                SwingPoint(
+                    timestamp=current_candle.timestamp,
+                    price=current_candle.low,
+                    type=SwingType.LOW,
+                    index=i,
+                )
+            )
+
+    swing_points.sort(key=lambda p: p.timestamp)
+    return swing_points
+
+
+def detect_swing_highs(
+    data: List[OHLCVData], lookback_period: int = 5
+) -> List[SwingPoint]:
+    """Detect only swing high points in price data."""
+    all_swings = detect_swing_points(data, lookback_period)
+    return [point for point in all_swings if point.type == SwingType.HIGH]
+
+
+def detect_swing_lows(
+    data: List[OHLCVData], lookback_period: int = 5
+) -> List[SwingPoint]:
+    """Detect only swing low points in price data."""
+    all_swings = detect_swing_points(data, lookback_period)
+    return [point for point in all_swings if point.type == SwingType.LOW]
+
+
+def detect_higher_highs_and_lows(
+    data: List[OHLCVData], lookback_period: int = 5
+) -> tuple:
+    """Detect uptrend pattern: higher highs and higher lows."""
+    swing_highs = detect_swing_highs(data, lookback_period)
+    swing_lows = detect_swing_lows(data, lookback_period)
+
+    if len(swing_highs) < 2 or len(swing_lows) < 2:
+        return False, 0.0
+
+    highs_ascending = all(
+        swing_highs[i].price > swing_highs[i - 1].price
+        for i in range(1, len(swing_highs))
+    )
+
+    lows_ascending = all(
+        swing_lows[i].price > swing_lows[i - 1].price for i in range(1, len(swing_lows))
+    )
+
+    confidence = _calculate_uptrend_confidence(
+        swing_highs, swing_lows, highs_ascending, lows_ascending
+    )
+
+    return highs_ascending and lows_ascending, confidence
+
+
+def detect_lower_highs_and_lows(
+    data: List[OHLCVData], lookback_period: int = 5
+) -> tuple:
+    """Detect downtrend pattern: lower highs and lower lows."""
+    swing_highs = detect_swing_highs(data, lookback_period)
+    swing_lows = detect_swing_lows(data, lookback_period)
+
+    if len(swing_highs) < 2 or len(swing_lows) < 2:
+        return False, 0.0
+
+    highs_descending = all(
+        swing_highs[i].price < swing_highs[i - 1].price
+        for i in range(1, len(swing_highs))
+    )
+
+    lows_descending = all(
+        swing_lows[i].price < swing_lows[i - 1].price
+        for i in range(1, len(swing_lows))
+    )
+
+    confidence = _calculate_downtrend_confidence(
+        swing_highs, swing_lows, highs_descending, lows_descending
+    )
+
+    return highs_descending and lows_descending, confidence
+
+
+def analyze_trend_pattern(data: List[OHLCVData], lookback_period: int = 5) -> str:
+    """Analyze the overall trend pattern in the data."""
+    has_uptrend, _ = detect_higher_highs_and_lows(data, lookback_period)
+    has_downtrend, _ = detect_lower_highs_and_lows(data, lookback_period)
+
+    if has_uptrend:
+        return "UPTREND"
+    elif has_downtrend:
+        return "DOWNTREND"
+    else:
+        return "NEUTRAL"
+
+
+def _calculate_downtrend_confidence(
+    swing_highs: List[SwingPoint],
+    swing_lows: List[SwingPoint],
+    highs_descending: bool,
+    lows_descending: bool,
+) -> float:
+    """Calculate confidence score for downtrend pattern."""
+    if not highs_descending and not lows_descending:
+        return 0.0
+
+    confidence = 0.0
+
+    if highs_descending and lows_descending:
+        confidence += 40.0
+    elif highs_descending or lows_descending:
+        confidence += 20.0
+
+    total_swings = len(swing_highs) + len(swing_lows)
+    swing_score = min(30.0, (total_swings - 4) * 5.0)
+    confidence += swing_score
+
+    if len(swing_highs) >= 2 and len(swing_lows) >= 2:
+        high_decline_pct = (
+            (swing_highs[0].price - swing_highs[-1].price) / swing_highs[0].price * 100
+        )
+        low_decline_pct = (
+            (swing_lows[0].price - swing_lows[-1].price) / swing_lows[0].price * 100
+        )
+        avg_decline_pct = (high_decline_pct + low_decline_pct) / 2
+        decline_score = min(30.0, max(0.0, avg_decline_pct * 3.0))
+        confidence += decline_score
+
+    return min(100.0, confidence)
+
+
+def _calculate_uptrend_confidence(
+    swing_highs: List[SwingPoint],
+    swing_lows: List[SwingPoint],
+    highs_ascending: bool,
+    lows_ascending: bool,
+) -> float:
+    """Calculate confidence score for uptrend pattern."""
+    if not highs_ascending and not lows_ascending:
+        return 0.0
+
+    confidence = 0.0
+
+    if highs_ascending and lows_ascending:
+        confidence += 40.0
+    elif highs_ascending or lows_ascending:
+        confidence += 20.0
+
+    total_swings = len(swing_highs) + len(swing_lows)
+    swing_score = min(30.0, (total_swings - 4) * 5.0)
+    confidence += swing_score
+
+    if len(swing_highs) >= 2 and len(swing_lows) >= 2:
+        high_advance_pct = (
+            (swing_highs[-1].price - swing_highs[0].price) / swing_highs[0].price * 100
+        )
+        low_advance_pct = (
+            (swing_lows[-1].price - swing_lows[0].price) / swing_lows[0].price * 100
+        )
+        avg_advance_pct = (high_advance_pct + low_advance_pct) / 2
+        advance_score = min(30.0, max(0.0, avg_advance_pct * 3.0))
+        confidence += advance_score
+
+    return min(100.0, confidence)

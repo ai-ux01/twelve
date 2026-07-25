@@ -1,0 +1,4 @@
+# file: /Users/anshulkumar/Desktop/twelve/apps/quant/services/trendline_service.py
+# hypothesis_version: 6.141.1
+
+[0.0, 0.85, 0.89, 1.0, 1.5, 1.8, 2.5, 2350.0, 2400.0, 2425.0, 2445.0, 2454.0, 2455.0, 2465.0, 2470.0, '2024-01-15T09:15:00Z', '2024-01-16T14:30:00Z', 'HIGH', 'LOW', 'RESISTANCE_BREAKOUT', 'breakout', 'breakout_index', 'breakout_price', 'breakout_type', 'confirmed', 'data cannot be empty', 'end_point', 'examples', 'index', 'intercept', 'json_schema_extra', 'price', 'r_squared', 'resistance_trendline', 'slope', 'start_point', 'support_trendline', 'swing_points', 'timestamp', 'trendline_price', 'type', 'volume_ratio']

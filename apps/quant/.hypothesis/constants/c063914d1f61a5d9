@@ -1,0 +1,4 @@
+# file: /Users/anshulkumar/Desktop/twelve/apps/quant/calculators/adx.py
+# hypothesis_version: 6.141.1
+
+[0.0, 100.0, 'adx', 'close', 'di_diff', 'di_sum', 'down_move', 'dx', 'high', 'low', 'minus_di', 'minus_dm', 'plus_di', 'plus_dm', 'prev_close', 'prev_high', 'prev_low', 'smoothed_minus_dm', 'smoothed_plus_dm', 'smoothed_tr', 'tr', 'tr1', 'tr2', 'tr3', 'up_move']

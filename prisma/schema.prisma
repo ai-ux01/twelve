@@ -1,0 +1,925 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model AIConversation {
+  id               String             @id
+  userId           String
+  promptId         String?
+  conversationType ConversationType
+  status           ConversationStatus @default(ACTIVE)
+  startedAt        DateTime           @default(now())
+  endedAt          DateTime?
+  Prompt           Prompt?            @relation(fields: [promptId], references: [id])
+  User             User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  AIMessage        AIMessage[]
+
+  @@index([status])
+  @@index([userId, startedAt])
+}
+
+model AIMessage {
+  id              String          @id
+  conversationId  String
+  promptVersionId String?
+  role            MessageRole
+  content         String
+  aiModel         String
+  aiProvider      AIProvider
+  tokensUsed      Int?
+  latencyMs       Int?
+  cost            Float?
+  contextSnapshot Json?
+  createdAt       DateTime        @default(now())
+  AIConversation  AIConversation  @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  PromptVersion   PromptVersion?  @relation(fields: [promptVersionId], references: [id])
+  AgentDecision   AgentDecision[]
+  Signal          Signal[]
+
+  @@index([aiModel])
+  @@index([conversationId, createdAt])
+}
+
+model Agent {
+  id               String             @id
+  userId           String
+  name             String
+  agentType        AgentType
+  role             String
+  goals            String[]
+  aiModel          String
+  temperature      Float              @default(0.7)
+  maxTokens        Int                @default(2000)
+  isActive         Boolean            @default(true)
+  createdAt        DateTime           @default(now())
+  updatedAt        DateTime
+  User             User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  AgentDecision    AgentDecision[]
+  AgentMemory      AgentMemory[]
+  AgentObservation AgentObservation[]
+
+  @@index([isActive])
+  @@index([userId, agentType])
+}
+
+model AgentDecision {
+  id               String            @id
+  agentId          String
+  observationId    String?
+  aiMessageId      String?
+  decisionType     DecisionType
+  decision         String
+  reasoning        String
+  confidence       Float
+  wasExecuted      Boolean           @default(false)
+  outcome          DecisionOutcome?
+  timestamp        DateTime          @default(now())
+  Agent            Agent             @relation(fields: [agentId], references: [id], onDelete: Cascade)
+  AIMessage        AIMessage?        @relation(fields: [aiMessageId], references: [id])
+  AgentObservation AgentObservation? @relation(fields: [observationId], references: [id])
+  Signal           Signal[]
+
+  @@index([agentId, timestamp])
+  @@index([decisionType])
+}
+
+model AgentMemory {
+  id           String     @id
+  agentId      String
+  memoryType   MemoryType
+  content      String
+  importance   Float      @default(0.5)
+  accessCount  Int        @default(0)
+  lastAccessed DateTime   @default(now())
+  createdAt    DateTime   @default(now())
+  Agent        Agent      @relation(fields: [agentId], references: [id], onDelete: Cascade)
+
+  @@index([agentId, memoryType])
+  @@index([importance])
+}
+
+model AgentObservation {
+  id              String          @id
+  agentId         String
+  observationType ObservationType
+  data            Json
+  timestamp       DateTime
+  importance      Float           @default(0.5)
+  createdAt       DateTime        @default(now())
+  AgentDecision   AgentDecision[]
+  Agent           Agent           @relation(fields: [agentId], references: [id], onDelete: Cascade)
+
+  @@index([agentId, timestamp])
+  @@index([observationType])
+}
+
+model AuditLog {
+  id         String   @id
+  userId     String?
+  service    String
+  action     String
+  entityType String?
+  entityId   String?
+  payload    Json?
+  result     Json?
+  success    Boolean
+  error      String?
+  ipAddress  String?
+  userAgent  String?
+  timestamp  DateTime @default(now())
+
+  @@index([service, action])
+  @@index([timestamp])
+  @@index([userId, timestamp])
+}
+
+model Backtest {
+  id             String          @id
+  userId         String
+  name           String
+  description    String?
+  symbols        String[]
+  startDate      DateTime
+  endDate        DateTime
+  initialCapital Float
+  strategyConfig Json
+  totalTrades    Int             @default(0)
+  winRate        Float?
+  totalReturn    Float?
+  maxDrawdown    Float?
+  sharpeRatio    Float?
+  status         BacktestStatus  @default(PENDING)
+  createdAt      DateTime        @default(now())
+  completedAt    DateTime?
+  User           User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  BacktestTrade  BacktestTrade[]
+
+  @@index([status])
+  @@index([userId, createdAt])
+}
+
+model BacktestTrade {
+  id            String          @id
+  backtestId    String
+  symbol        String
+  direction     SignalDirection
+  quantity      Int
+  entryPrice    Float
+  exitPrice     Float
+  stopLoss      Float
+  target        Float
+  pnl           Float
+  pnlPercent    Float
+  entryTime     DateTime
+  exitTime      DateTime
+  holdingPeriod Int
+  exitReason    String
+  Backtest      Backtest        @relation(fields: [backtestId], references: [id], onDelete: Cascade)
+
+  @@index([backtestId])
+  @@index([symbol])
+}
+
+model Candle {
+  id           String     @id
+  instrumentId String
+  timeframe    Timeframe
+  timestamp    DateTime
+  open         Float
+  high         Float
+  low          Float
+  close        Float
+  volume       BigInt
+  createdAt    DateTime   @default(now())
+  Instrument   Instrument @relation(fields: [instrumentId], references: [id], onDelete: Cascade)
+
+  @@unique([instrumentId, timeframe, timestamp])
+  @@index([instrumentId, timeframe, timestamp])
+  @@index([timestamp])
+}
+
+model IndicatorSnapshot {
+  id              String     @id
+  instrumentId    String
+  timestamp       DateTime
+  timeframe       Timeframe
+  sma20           Float?
+  sma50           Float?
+  sma200          Float?
+  ema9            Float?
+  ema20           Float?
+  ema50           Float?
+  rsi             Float?
+  macd            Float?
+  macdSignal      Float?
+  macdHistogram   Float?
+  stochK          Float?
+  stochD          Float?
+  atr             Float?
+  bollingerUpper  Float?
+  bollingerMiddle Float?
+  bollingerLower  Float?
+  obv             BigInt?
+  vwap            Float?
+  delta           Float?
+  gamma           Float?
+  theta           Float?
+  vega            Float?
+  rho             Float?
+  impliedVol      Float?
+  createdAt       DateTime   @default(now())
+  Instrument      Instrument @relation(fields: [instrumentId], references: [id], onDelete: Cascade)
+  Signal          Signal[]
+
+  @@unique([instrumentId, timeframe, timestamp])
+  @@index([instrumentId, timeframe, timestamp])
+  @@index([timestamp])
+}
+
+model Instrument {
+  id                String              @id
+  symbol            String              @unique
+  exchange          String
+  name              String
+  assetType         AssetType
+  sector            String?
+  industry          String?
+  isin              String?
+  underlying        String?
+  strikePrice       Float?
+  expiry            DateTime?
+  optionType        OptionType?
+  isActive          Boolean             @default(true)
+  createdAt         DateTime            @default(now())
+  updatedAt         DateTime
+  Candle            Candle[]
+  IndicatorSnapshot IndicatorSnapshot[]
+  MarketData        MarketData[]
+  MarketRegime      MarketRegime[]
+  Signal            Signal[]
+  SupportResistance SupportResistance[]
+  Trendline         Trendline[]
+
+  @@index([assetType])
+  @@index([exchange, assetType])
+  @@index([symbol])
+}
+
+model LiveTrade {
+  id             String               @id
+  userId         String
+  signalId       String?
+  symbol         String
+  direction      SignalDirection
+  quantity       Int
+  entryPrice     Float
+  stopLoss       Float
+  target         Float
+  brokerOrderId  String?
+  broker         String               @default("KOTAK_NEO")
+  status         TradeExecutionStatus @default(PENDING)
+  currentPrice   Float?
+  unrealizedPnL  Float?
+  realizedPnL    Float?
+  brokerageFees  Float?
+  sttCharges     Float?
+  otherCharges   Float?
+  enteredAt      DateTime             @default(now())
+  exitedAt       DateTime?
+  Signal         Signal?              @relation(fields: [signalId], references: [id])
+  User           User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  TradeExecution TradeExecution[]
+  TradeJournal   TradeJournal[]
+
+  @@index([brokerOrderId])
+  @@index([signalId])
+  @@index([symbol])
+  @@index([userId, status])
+}
+
+model MarketData {
+  id           String     @id
+  instrumentId String
+  timestamp    DateTime
+  open         Float
+  high         Float
+  low          Float
+  close        Float
+  volume       BigInt
+  openInterest BigInt?
+  vwap         Float?
+  bidPrice     Float?
+  askPrice     Float?
+  bidSize      Int?
+  askSize      Int?
+  createdAt    DateTime   @default(now())
+  Instrument   Instrument @relation(fields: [instrumentId], references: [id], onDelete: Cascade)
+
+  @@unique([instrumentId, timestamp])
+  @@index([instrumentId, timestamp])
+  @@index([timestamp])
+}
+
+model MarketDataCache {
+  id        String        @id
+  symbol    String
+  timeframe String
+  dataType  CacheDataType @default(OHLCV)
+  data      Json
+  cachedAt  DateTime      @default(now())
+  expiresAt DateTime
+
+  @@unique([symbol, timeframe, dataType])
+  @@index([expiresAt])
+  @@index([symbol])
+}
+
+model MarketRegime {
+  id           String     @id
+  instrumentId String
+  regime       RegimeType
+  startTime    DateTime
+  endTime      DateTime?
+  volatility   Float
+  trend        Float
+  volume       Float
+  confidence   Float
+  createdAt    DateTime   @default(now())
+  Instrument   Instrument @relation(fields: [instrumentId], references: [id], onDelete: Cascade)
+  Signal       Signal[]
+
+  @@index([instrumentId, startTime])
+  @@index([regime])
+}
+
+model OptionsPosition {
+  id          String     @id
+  positionId  String     @unique
+  symbol      String
+  strikePrice Float
+  optionType  OptionType
+  expiry      DateTime
+  entryPrice  Float
+  quantity    Int
+  greeks      Json?
+  isPaper     Boolean    @default(false)
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime
+  Position    Position   @relation(fields: [positionId], references: [id], onDelete: Cascade)
+
+  @@index([expiry])
+  @@index([isPaper])
+  @@index([symbol, expiry, isPaper])
+  @@index([symbol])
+}
+
+model Order {
+  id            String          @id
+  positionId    String?
+  symbol        String
+  orderType     OrderType
+  direction     SignalDirection
+  quantity      Int
+  price         Float?
+  triggerPrice  Float?
+  status        OrderStatus     @default(PENDING)
+  brokerOrderId String?
+  placedAt      DateTime        @default(now())
+  executedAt    DateTime?
+  cancelledAt   DateTime?
+  Position      Position?       @relation(fields: [positionId], references: [id])
+
+  @@index([brokerOrderId])
+  @@index([positionId])
+  @@index([status])
+}
+
+model PaperTrade {
+  id                String               @id
+  userId            String
+  signalId          String?
+  symbol            String
+  direction         SignalDirection
+  quantity          Int
+  entryPrice        Float
+  stopLoss          Float
+  target            Float
+  simulatedSlippage Float                @default(0)
+  simulatedFees     Float                @default(0)
+  status            TradeExecutionStatus @default(OPEN)
+  currentPrice      Float?
+  unrealizedPnL     Float?
+  realizedPnL       Float?
+  enteredAt         DateTime             @default(now())
+  exitedAt          DateTime?
+  Signal            Signal?              @relation(fields: [signalId], references: [id])
+  User              User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  TradeExecution    TradeExecution[]
+  TradeJournal      TradeJournal[]
+
+  @@index([signalId])
+  @@index([symbol])
+  @@index([userId, status])
+}
+
+model Portfolio {
+  id            String     @id
+  userId        String     @unique
+  totalValue    Float
+  cashBalance   Float
+  investedValue Float
+  unrealizedPnL Float      @default(0)
+  realizedPnL   Float      @default(0)
+  updatedAt     DateTime
+  User          User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  Position      Position[]
+
+  @@index([userId])
+}
+
+model Position {
+  id              String           @id
+  portfolioId     String
+  symbol          String
+  quantity        Int
+  averagePrice    Float
+  currentPrice    Float
+  unrealizedPnL   Float
+  realizedPnL     Float            @default(0)
+  paperTradeId    String?          @unique
+  liveTradeId     String?          @unique
+  status          PositionStatus   @default(OPEN)
+  openedAt        DateTime         @default(now())
+  closedAt        DateTime?
+  updatedAt       DateTime
+  intradayFlag    Boolean          @default(false)
+  OptionsPosition OptionsPosition?
+  Order           Order[]
+  Portfolio       Portfolio        @relation(fields: [portfolioId], references: [id], onDelete: Cascade)
+
+  @@index([portfolioId, intradayFlag])
+  @@index([portfolioId, status])
+  @@index([symbol])
+}
+
+model Prompt {
+  id               String           @id
+  userId           String
+  rawPrompt        String
+  intent           PromptIntent
+  symbols          String[]
+  timeframe        Timeframe?
+  tradeType        TradeType?
+  processingTimeMs Int?
+  createdAt        DateTime         @default(now())
+  AIConversation   AIConversation[]
+  User             User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  PromptVersion    PromptVersion[]
+  Signal           Signal[]
+
+  @@index([intent])
+  @@index([userId, createdAt])
+}
+
+model PromptVersion {
+  id              String      @id
+  promptId        String
+  version         Int
+  processedPrompt String
+  template        String?
+  variables       Json?
+  createdAt       DateTime    @default(now())
+  AIMessage       AIMessage[]
+  Prompt          Prompt      @relation(fields: [promptId], references: [id], onDelete: Cascade)
+
+  @@unique([promptId, version])
+  @@index([promptId])
+}
+
+model RiskProfile {
+  id                     String     @id
+  userId                 String     @unique
+  maxPositionSize        Float      @default(100000)
+  maxDrawdown            Float      @default(0.05)
+  maxPortfolioExposure   Float      @default(0.30)
+  defaultStopLoss        Float      @default(0.02)
+  riskPerTrade           Float      @default(0.01)
+  maxOpenPositions       Int        @default(10)
+  kiteApiKey             String?
+  kiteApiSecret          String?
+  kotakApiKey            String?
+  kotakApiSecret         String?
+  aiProvider             AIProvider @default(OPENAI)
+  aiModel                String     @default("gpt-4")
+  aiApiKey               String?
+  ollamaBaseUrl          String?
+  createdAt              DateTime   @default(now())
+  updatedAt              DateTime
+  maxOptionsExposure     Float      @default(0.20)
+  maxOptionsPositionSize Float?
+  User                   User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model ScoringWeights {
+  id                     String   @id
+  userId                 String?  @unique
+  trendWeight            Float    @default(0.20)
+  technicalWeight        Float    @default(0.20)
+  volumeWeight           Float    @default(0.15)
+  relativeStrengthWeight Float    @default(0.15)
+  breakoutWeight         Float    @default(0.10)
+  sectorWeight           Float    @default(0.10)
+  riskRewardWeight       Float    @default(0.10)
+  createdAt              DateTime @default(now())
+  updatedAt              DateTime
+
+  @@index([userId])
+}
+
+model Signal {
+  id                  String             @id
+  promptId            String?
+  aiMessageId         String?
+  agentDecisionId     String?
+  instrumentId        String
+  indicatorSnapshotId String?
+  trendlineId         String?
+  supportResistanceId String?
+  marketRegimeId      String?
+  signalType          SignalType
+  direction           SignalDirection
+  strength            Float
+  confidence          Float
+  entryPrice          Float
+  stopLoss            Float
+  target              Float
+  positionSize        Int?
+  riskAmount          Float
+  rewardAmount        Float
+  riskRewardRatio     Float
+  successProbability  Float?
+  reasoning           String
+  keyFactors          String[]
+  status              SignalStatus       @default(ACTIVE)
+  timestamp           DateTime           @default(now())
+  expiresAt           DateTime?
+  LiveTrade           LiveTrade[]
+  PaperTrade          PaperTrade[]
+  AgentDecision       AgentDecision?     @relation(fields: [agentDecisionId], references: [id])
+  AIMessage           AIMessage?         @relation(fields: [aiMessageId], references: [id])
+  IndicatorSnapshot   IndicatorSnapshot? @relation(fields: [indicatorSnapshotId], references: [id])
+  Instrument          Instrument         @relation(fields: [instrumentId], references: [id], onDelete: Cascade)
+  MarketRegime        MarketRegime?      @relation(fields: [marketRegimeId], references: [id])
+  Prompt              Prompt?            @relation(fields: [promptId], references: [id])
+  SupportResistance   SupportResistance? @relation(fields: [supportResistanceId], references: [id])
+  Trendline           Trendline?         @relation(fields: [trendlineId], references: [id])
+
+  @@index([confidence])
+  @@index([instrumentId, timestamp])
+  @@index([signalType, status])
+}
+
+model StockUniverse {
+  id        String   @id
+  symbol    String   @unique
+  sector    String
+  marketCap Float
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime
+
+  @@index([isActive])
+  @@index([sector])
+}
+
+model SupportResistance {
+  id           String     @id
+  instrumentId String
+  levelType    LevelType
+  priceLevel   Float
+  strength     Float
+  touches      Int
+  firstTouch   DateTime
+  lastTouch    DateTime
+  isActive     Boolean    @default(true)
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime
+  Signal       Signal[]
+  Instrument   Instrument @relation(fields: [instrumentId], references: [id], onDelete: Cascade)
+
+  @@index([instrumentId, isActive])
+  @@index([priceLevel])
+}
+
+model TradeExecution {
+  id            String        @id
+  paperTradeId  String?
+  liveTradeId   String?
+  executionType ExecutionType
+  quantity      Int
+  price         Float
+  fees          Float         @default(0)
+  brokerOrderId String?
+  executedAt    DateTime      @default(now())
+  LiveTrade     LiveTrade?    @relation(fields: [liveTradeId], references: [id], onDelete: Cascade)
+  PaperTrade    PaperTrade?   @relation(fields: [paperTradeId], references: [id], onDelete: Cascade)
+
+  @@index([executedAt])
+  @@index([liveTradeId])
+  @@index([paperTradeId])
+}
+
+model TradeJournal {
+  id              String           @id
+  userId          String
+  paperTradeId    String?
+  liveTradeId     String?
+  entryType       JournalEntryType
+  notes           String
+  lessons         String?
+  emotions        String[]
+  tags            String[]
+  preTradeSetup   String?
+  postTradeReview String?
+  mistakesMade    String[]
+  rating          Int?
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime
+  LiveTrade       LiveTrade?       @relation(fields: [liveTradeId], references: [id])
+  PaperTrade      PaperTrade?      @relation(fields: [paperTradeId], references: [id])
+  User            User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([entryType])
+  @@index([userId, createdAt])
+}
+
+model Trendline {
+  id            String        @id
+  instrumentId  String
+  trendlineType TrendlineType
+  startTime     DateTime
+  endTime       DateTime
+  startPrice    Float
+  endPrice      Float
+  slope         Float
+  rSquared      Float
+  touches       Int
+  isActive      Boolean       @default(true)
+  confidence    Float
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime
+  Signal        Signal[]
+  Instrument    Instrument    @relation(fields: [instrumentId], references: [id], onDelete: Cascade)
+
+  @@index([createdAt])
+  @@index([instrumentId, isActive])
+}
+
+model User {
+  id             String           @id
+  email          String           @unique
+  name           String?
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime
+  AIConversation AIConversation[]
+  Agent          Agent[]
+  Backtest       Backtest[]
+  LiveTrade      LiveTrade[]
+  PaperTrade     PaperTrade[]
+  Portfolio      Portfolio?
+  Prompt         Prompt[]
+  RiskProfile    RiskProfile?
+  TradeJournal   TradeJournal[]
+
+  @@index([email])
+}
+
+enum AIProvider {
+  OPENAI
+  OLLAMA
+  ANTHROPIC
+  CUSTOM
+}
+
+enum AgentType {
+  MARKET_ANALYST
+  RISK_MANAGER
+  STRATEGY_DEVELOPER
+  PORTFOLIO_OPTIMIZER
+  EXECUTION_MONITOR
+  RESEARCH_ASSISTANT
+}
+
+enum AssetType {
+  STOCK
+  OPTION_CALL
+  OPTION_PUT
+  INDEX
+  FUTURES
+}
+
+enum BacktestStatus {
+  PENDING
+  RUNNING
+  COMPLETED
+  FAILED
+}
+
+enum CacheDataType {
+  OHLCV
+  OPTIONS_CHAIN
+}
+
+enum ConversationStatus {
+  ACTIVE
+  COMPLETED
+  ABANDONED
+  ERROR
+}
+
+enum ConversationType {
+  TRADE_ANALYSIS
+  STRATEGY_DEVELOPMENT
+  PORTFOLIO_REVIEW
+  MARKET_RESEARCH
+  DEBUGGING
+}
+
+enum DecisionOutcome {
+  SUCCESS
+  FAILURE
+  PARTIAL
+  CANCELLED
+  PENDING
+}
+
+enum DecisionType {
+  ENTER_TRADE
+  EXIT_TRADE
+  ADJUST_POSITION
+  HOLD
+  SKIP
+  ALERT
+  RESEARCH_MORE
+}
+
+enum ExecutionType {
+  ENTRY
+  PARTIAL_EXIT
+  FULL_EXIT
+  STOP_LOSS
+  TARGET
+  MANUAL
+}
+
+enum JournalEntryType {
+  PRE_TRADE
+  DURING_TRADE
+  POST_TRADE
+  WEEKLY_REVIEW
+  MONTHLY_REVIEW
+}
+
+enum LevelType {
+  SUPPORT
+  RESISTANCE
+  PIVOT
+}
+
+enum MemoryType {
+  EPISODIC
+  SEMANTIC
+  PROCEDURAL
+  WORKING
+}
+
+enum MessageRole {
+  USER
+  ASSISTANT
+  SYSTEM
+  FUNCTION
+}
+
+enum ObservationType {
+  PRICE_MOVEMENT
+  VOLUME_SPIKE
+  INDICATOR_SIGNAL
+  NEWS_EVENT
+  PATTERN_DETECTED
+  RISK_BREACH
+  OPPORTUNITY
+}
+
+enum OptionType {
+  CALL
+  PUT
+}
+
+enum OrderStatus {
+  PENDING
+  PLACED
+  PARTIALLY_FILLED
+  FILLED
+  CANCELLED
+  REJECTED
+  EXPIRED
+}
+
+enum OrderType {
+  MARKET
+  LIMIT
+  STOP_LOSS
+  STOP_LOSS_LIMIT
+  TRAILING_STOP
+}
+
+enum PositionStatus {
+  OPEN
+  CLOSED
+  PARTIALLY_CLOSED
+}
+
+enum PromptIntent {
+  FIND_TRADE
+  ANALYZE_MARKET
+  GENERATE_STRATEGY
+  REVIEW_POSITION
+  BACKTEST
+  EXPLAIN
+  QUERY
+}
+
+enum RegimeType {
+  TRENDING_UP
+  TRENDING_DOWN
+  RANGING
+  VOLATILE
+  BREAKOUT
+  BREAKDOWN
+  CONSOLIDATION
+}
+
+enum SignalDirection {
+  LONG
+  SHORT
+  FLAT
+}
+
+enum SignalStatus {
+  ACTIVE
+  EXECUTED
+  EXPIRED
+  CANCELLED
+  INVALIDATED
+}
+
+enum SignalType {
+  ENTRY
+  EXIT
+  STOP_LOSS_ADJUST
+  TARGET_ADJUST
+  ALERT
+}
+
+enum Timeframe {
+  TICK
+  ONE_MIN
+  FIVE_MIN
+  FIFTEEN_MIN
+  THIRTY_MIN
+  ONE_HOUR
+  FOUR_HOUR
+  ONE_DAY
+  ONE_WEEK
+  ONE_MONTH
+}
+
+enum TradeExecutionStatus {
+  PENDING
+  OPEN
+  CLOSED
+  STOPPED
+  CANCELLED
+  FAILED
+}
+
+enum TradeType {
+  SWING
+  INTRADAY
+  SCALPING
+  POSITIONAL
+}
+
+enum TrendlineType {
+  SUPPORT
+  RESISTANCE
+  UPTREND
+  DOWNTREND
+  CHANNEL_UPPER
+  CHANNEL_LOWER
+}
