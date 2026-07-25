@@ -1,3 +1,5 @@
+'use client';
+
 /**
  * Simple Toast Notification Component
  *

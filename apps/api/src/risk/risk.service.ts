@@ -206,7 +206,7 @@ export class RiskService {
     // Get portfolio
     const portfolio = await this.prisma.portfolio.findUnique({
       where: { userId },
-      include: { positions: { where: { status: 'OPEN' } } },
+      include: { Position: { where: { status: 'OPEN' } } },
     });
 
     if (!portfolio) {
@@ -215,7 +215,7 @@ export class RiskService {
     }
 
     // Calculate current exposure
-    const currentExposure = portfolio.positions.reduce(
+    const currentExposure = portfolio.Position.reduce(
       (sum, pos) => sum + pos.currentPrice * pos.quantity,
       0
     );
@@ -320,7 +320,7 @@ export class RiskService {
     // Get portfolio
     const portfolio = await this.prisma.portfolio.findUnique({
       where: { userId },
-      include: { positions: { where: { status: 'OPEN' } } },
+      include: { Position: { where: { status: 'OPEN' } } },
     });
 
     if (!portfolio) {
@@ -370,7 +370,7 @@ export class RiskService {
     const portfolio = await this.prisma.portfolio.findUnique({
       where: { userId },
       include: {
-        positions: {
+        Position: {
           where: { status: 'OPEN' },
         },
       },

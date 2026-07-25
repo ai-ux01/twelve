@@ -408,7 +408,7 @@ export class PaperTradingService {
         status: TradeExecutionStatus.OPEN,
       },
       include: {
-        signal: true,
+        Signal: true,
         executions: true,
       },
       orderBy: {
@@ -426,7 +426,7 @@ export class PaperTradingService {
         userId,
       },
       include: {
-        signal: true,
+        Signal: true,
         executions: true,
       },
       orderBy: {

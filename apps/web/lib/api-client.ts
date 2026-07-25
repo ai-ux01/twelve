@@ -666,22 +666,9 @@ class ApiClient {
    * based on technical analysis and deterministic scoring.
    */
   async scanSwingUniverse(request: SwingScanRequest): Promise<SwingScanResponse> {
-    // Note: Using full URL since swing endpoints are at root level, not under /api
-    const url = `${this.baseUrl.replace('/api', '')}/swing/scan`;
-    return fetch(url, {
+    return this.fetch<SwingScanResponse>('/swing/scan', {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
       body: JSON.stringify(request),
-    }).then(async (response) => {
-      if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(
-          `Swing scan failed: ${response.status} ${response.statusText} - ${errorText}`
-        );
-      }
-      return response.json();
     });
   }
 
@@ -692,22 +679,9 @@ class ApiClient {
    * Performs deep analysis on a specific stock for swing trading opportunities
    */
   async analyzeSwingSymbol(symbol: string, userId?: string): Promise<SwingAnalysisResponse> {
-    // Note: Using full URL since swing endpoints are at root level, not under /api
-    const url = `${this.baseUrl.replace('/api', '')}/swing/analyze/${symbol}`;
-    return fetch(url, {
+    return this.fetch<SwingAnalysisResponse>(`/swing/analyze/${symbol}`, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
       body: JSON.stringify({ userId }),
-    }).then(async (response) => {
-      if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(
-          `Swing analysis failed: ${response.status} ${response.statusText} - ${errorText}`
-        );
-      }
-      return response.json();
     });
   }
 
@@ -718,22 +692,9 @@ class ApiClient {
    * Executes a paper trade (simulated) for a swing trading setup
    */
   async executeSwingPaperTrade(request: SwingPaperTradeRequest): Promise<SwingPaperTradeResponse> {
-    // Note: Using full URL since swing endpoints are at root level, not under /api
-    const url = `${this.baseUrl.replace('/api', '')}/swing/paper-trade`;
-    return fetch(url, {
+    return this.fetch<SwingPaperTradeResponse>('/swing/paper-trade', {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
       body: JSON.stringify(request),
-    }).then(async (response) => {
-      if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(
-          `Paper trade execution failed: ${response.status} ${response.statusText} - ${errorText}`
-        );
-      }
-      return response.json();
     });
   }
 }

@@ -57,7 +57,7 @@ model Agent {
   maxTokens        Int                @default(2000)
   isActive         Boolean            @default(true)
   createdAt        DateTime           @default(now())
-  updatedAt        DateTime @updatedAt
+  updatedAt        DateTime
   User             User               @relation(fields: [userId], references: [id], onDelete: Cascade)
   AgentDecision    AgentDecision[]
   AgentMemory      AgentMemory[]
@@ -256,7 +256,7 @@ model Instrument {
   optionType        OptionType?
   isActive          Boolean             @default(true)
   createdAt         DateTime            @default(now())
-  updatedAt         DateTime @updatedAt
+  updatedAt         DateTime
   Candle            Candle[]
   IndicatorSnapshot IndicatorSnapshot[]
   MarketData        MarketData[]
@@ -369,7 +369,7 @@ model OptionsPosition {
   greeks      Json?
   isPaper     Boolean    @default(false)
   createdAt   DateTime   @default(now())
-  updatedAt   DateTime @updatedAt
+  updatedAt   DateTime
   Position    Position   @relation(fields: [positionId], references: [id], onDelete: Cascade)
 
   @@index([expiry])
@@ -435,7 +435,7 @@ model Portfolio {
   investedValue Float
   unrealizedPnL Float      @default(0)
   realizedPnL   Float      @default(0)
-  updatedAt     DateTime @updatedAt
+  updatedAt     DateTime
   User          User       @relation(fields: [userId], references: [id], onDelete: Cascade)
   Position      Position[]
 
@@ -456,7 +456,7 @@ model Position {
   status          PositionStatus   @default(OPEN)
   openedAt        DateTime         @default(now())
   closedAt        DateTime?
-  updatedAt       DateTime @updatedAt
+  updatedAt       DateTime
   intradayFlag    Boolean          @default(false)
   OptionsPosition OptionsPosition?
   Order           Order[]
@@ -519,7 +519,7 @@ model RiskProfile {
   aiApiKey               String?
   ollamaBaseUrl          String?
   createdAt              DateTime   @default(now())
-  updatedAt              DateTime @updatedAt
+  updatedAt              DateTime
   maxOptionsExposure     Float      @default(0.20)
   maxOptionsPositionSize Float?
   User                   User       @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -536,7 +536,7 @@ model ScoringWeights {
   sectorWeight           Float    @default(0.10)
   riskRewardWeight       Float    @default(0.10)
   createdAt              DateTime @default(now())
-  updatedAt              DateTime @updatedAt
+  updatedAt              DateTime
 
   @@index([userId])
 }
@@ -591,7 +591,7 @@ model StockUniverse {
   marketCap Float
   isActive  Boolean  @default(true)
   createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  updatedAt DateTime
 
   @@index([isActive])
   @@index([sector])
@@ -608,7 +608,7 @@ model SupportResistance {
   lastTouch    DateTime
   isActive     Boolean    @default(true)
   createdAt    DateTime   @default(now())
-  updatedAt    DateTime @updatedAt
+  updatedAt    DateTime
   Signal       Signal[]
   Instrument   Instrument @relation(fields: [instrumentId], references: [id], onDelete: Cascade)
 
@@ -649,7 +649,7 @@ model TradeJournal {
   mistakesMade    String[]
   rating          Int?
   createdAt       DateTime         @default(now())
-  updatedAt       DateTime @updatedAt
+  updatedAt       DateTime
   LiveTrade       LiveTrade?       @relation(fields: [liveTradeId], references: [id])
   PaperTrade      PaperTrade?      @relation(fields: [paperTradeId], references: [id])
   User            User             @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -672,7 +672,7 @@ model Trendline {
   isActive      Boolean       @default(true)
   confidence    Float
   createdAt     DateTime      @default(now())
-  updatedAt     DateTime @updatedAt
+  updatedAt     DateTime
   Signal        Signal[]
   Instrument    Instrument    @relation(fields: [instrumentId], references: [id], onDelete: Cascade)
 
@@ -685,7 +685,7 @@ model User {
   email          String           @unique
   name           String?
   createdAt      DateTime         @default(now())
-  updatedAt      DateTime @updatedAt
+  updatedAt      DateTime
   AIConversation AIConversation[]
   Agent          Agent[]
   Backtest       Backtest[]

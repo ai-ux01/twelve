@@ -8,7 +8,7 @@ datasource db {
 }
 
 model AIConversation {
-  id               String             @id @default(uuid())
+  id               String             @id
   userId           String
   promptId         String?
   conversationType ConversationType
@@ -24,7 +24,7 @@ model AIConversation {
 }
 
 model AIMessage {
-  id              String          @id @default(uuid())
+  id              String          @id
   conversationId  String
   promptVersionId String?
   role            MessageRole
@@ -46,7 +46,7 @@ model AIMessage {
 }
 
 model Agent {
-  id               String             @id @default(uuid())
+  id               String             @id
   userId           String
   name             String
   agentType        AgentType
@@ -57,7 +57,7 @@ model Agent {
   maxTokens        Int                @default(2000)
   isActive         Boolean            @default(true)
   createdAt        DateTime           @default(now())
-  updatedAt        DateTime @updatedAt
+  updatedAt        DateTime
   User             User               @relation(fields: [userId], references: [id], onDelete: Cascade)
   AgentDecision    AgentDecision[]
   AgentMemory      AgentMemory[]
@@ -68,7 +68,7 @@ model Agent {
 }
 
 model AgentDecision {
-  id               String            @id @default(uuid())
+  id               String            @id
   agentId          String
   observationId    String?
   aiMessageId      String?
@@ -89,7 +89,7 @@ model AgentDecision {
 }
 
 model AgentMemory {
-  id           String     @id @default(uuid())
+  id           String     @id
   agentId      String
   memoryType   MemoryType
   content      String
@@ -104,7 +104,7 @@ model AgentMemory {
 }
 
 model AgentObservation {
-  id              String          @id @default(uuid())
+  id              String          @id
   agentId         String
   observationType ObservationType
   data            Json
@@ -119,7 +119,7 @@ model AgentObservation {
 }
 
 model AuditLog {
-  id         String   @id @default(uuid())
+  id         String   @id
   userId     String?
   service    String
   action     String
@@ -139,7 +139,7 @@ model AuditLog {
 }
 
 model Backtest {
-  id             String          @id @default(uuid())
+  id             String          @id
   userId         String
   name           String
   description    String?
@@ -164,7 +164,7 @@ model Backtest {
 }
 
 model BacktestTrade {
-  id            String          @id @default(uuid())
+  id            String          @id
   backtestId    String
   symbol        String
   direction     SignalDirection
@@ -186,7 +186,7 @@ model BacktestTrade {
 }
 
 model Candle {
-  id           String     @id @default(uuid())
+  id           String     @id
   instrumentId String
   timeframe    Timeframe
   timestamp    DateTime
@@ -204,7 +204,7 @@ model Candle {
 }
 
 model IndicatorSnapshot {
-  id              String     @id @default(uuid())
+  id              String     @id
   instrumentId    String
   timestamp       DateTime
   timeframe       Timeframe
@@ -242,7 +242,7 @@ model IndicatorSnapshot {
 }
 
 model Instrument {
-  id                String              @id @default(uuid())
+  id                String              @id
   symbol            String              @unique
   exchange          String
   name              String
@@ -256,7 +256,7 @@ model Instrument {
   optionType        OptionType?
   isActive          Boolean             @default(true)
   createdAt         DateTime            @default(now())
-  updatedAt         DateTime @updatedAt
+  updatedAt         DateTime
   Candle            Candle[]
   IndicatorSnapshot IndicatorSnapshot[]
   MarketData        MarketData[]
@@ -303,7 +303,7 @@ model LiveTrade {
 }
 
 model MarketData {
-  id           String     @id @default(uuid())
+  id           String     @id
   instrumentId String
   timestamp    DateTime
   open         Float
@@ -326,7 +326,7 @@ model MarketData {
 }
 
 model MarketDataCache {
-  id        String        @id @default(uuid())
+  id        String        @id
   symbol    String
   timeframe String
   dataType  CacheDataType @default(OHLCV)
@@ -340,7 +340,7 @@ model MarketDataCache {
 }
 
 model MarketRegime {
-  id           String     @id @default(uuid())
+  id           String     @id
   instrumentId String
   regime       RegimeType
   startTime    DateTime
@@ -358,7 +358,7 @@ model MarketRegime {
 }
 
 model OptionsPosition {
-  id          String     @id @default(uuid())
+  id          String     @id
   positionId  String     @unique
   symbol      String
   strikePrice Float
@@ -369,7 +369,7 @@ model OptionsPosition {
   greeks      Json?
   isPaper     Boolean    @default(false)
   createdAt   DateTime   @default(now())
-  updatedAt   DateTime @updatedAt
+  updatedAt   DateTime
   Position    Position   @relation(fields: [positionId], references: [id], onDelete: Cascade)
 
   @@index([expiry])
@@ -379,7 +379,7 @@ model OptionsPosition {
 }
 
 model Order {
-  id            String          @id @default(uuid())
+  id            String          @id
   positionId    String?
   symbol        String
   orderType     OrderType
@@ -400,7 +400,7 @@ model Order {
 }
 
 model PaperTrade {
-  id                String               @id @default(uuid())
+  id                String               @id
   userId            String
   signalId          String?
   symbol            String
@@ -428,14 +428,14 @@ model PaperTrade {
 }
 
 model Portfolio {
-  id            String     @id @default(uuid())
+  id            String     @id
   userId        String     @unique
   totalValue    Float
   cashBalance   Float
   investedValue Float
   unrealizedPnL Float      @default(0)
   realizedPnL   Float      @default(0)
-  updatedAt     DateTime @updatedAt
+  updatedAt     DateTime
   User          User       @relation(fields: [userId], references: [id], onDelete: Cascade)
   Position      Position[]
 
@@ -443,7 +443,7 @@ model Portfolio {
 }
 
 model Position {
-  id              String           @id @default(uuid())
+  id              String           @id
   portfolioId     String
   symbol          String
   quantity        Int
@@ -456,7 +456,7 @@ model Position {
   status          PositionStatus   @default(OPEN)
   openedAt        DateTime         @default(now())
   closedAt        DateTime?
-  updatedAt       DateTime @updatedAt
+  updatedAt       DateTime
   intradayFlag    Boolean          @default(false)
   OptionsPosition OptionsPosition?
   Order           Order[]
@@ -468,7 +468,7 @@ model Position {
 }
 
 model Prompt {
-  id               String           @id @default(uuid())
+  id               String           @id
   userId           String
   rawPrompt        String
   intent           PromptIntent
@@ -487,7 +487,7 @@ model Prompt {
 }
 
 model PromptVersion {
-  id              String      @id @default(uuid())
+  id              String      @id
   promptId        String
   version         Int
   processedPrompt String
@@ -502,7 +502,7 @@ model PromptVersion {
 }
 
 model RiskProfile {
-  id                     String     @id @default(uuid())
+  id                     String     @id
   userId                 String     @unique
   maxPositionSize        Float      @default(100000)
   maxDrawdown            Float      @default(0.05)
@@ -519,14 +519,14 @@ model RiskProfile {
   aiApiKey               String?
   ollamaBaseUrl          String?
   createdAt              DateTime   @default(now())
-  updatedAt              DateTime @updatedAt
+  updatedAt              DateTime
   maxOptionsExposure     Float      @default(0.20)
   maxOptionsPositionSize Float?
   User                   User       @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 model ScoringWeights {
-  id                     String   @id @default(uuid())
+  id                     String   @id
   userId                 String?  @unique
   trendWeight            Float    @default(0.20)
   technicalWeight        Float    @default(0.20)
@@ -536,13 +536,13 @@ model ScoringWeights {
   sectorWeight           Float    @default(0.10)
   riskRewardWeight       Float    @default(0.10)
   createdAt              DateTime @default(now())
-  updatedAt              DateTime @updatedAt
+  updatedAt              DateTime
 
   @@index([userId])
 }
 
 model Signal {
-  id                  String             @id @default(uuid())
+  id                  String             @id
   promptId            String?
   aiMessageId         String?
   agentDecisionId     String?
@@ -585,20 +585,20 @@ model Signal {
 }
 
 model StockUniverse {
-  id        String   @id @default(uuid())
+  id        String   @id
   symbol    String   @unique
   sector    String
   marketCap Float
   isActive  Boolean  @default(true)
   createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  updatedAt DateTime
 
   @@index([isActive])
   @@index([sector])
 }
 
 model SupportResistance {
-  id           String     @id @default(uuid())
+  id           String     @id
   instrumentId String
   levelType    LevelType
   priceLevel   Float
@@ -608,7 +608,7 @@ model SupportResistance {
   lastTouch    DateTime
   isActive     Boolean    @default(true)
   createdAt    DateTime   @default(now())
-  updatedAt    DateTime @updatedAt
+  updatedAt    DateTime
   Signal       Signal[]
   Instrument   Instrument @relation(fields: [instrumentId], references: [id], onDelete: Cascade)
 
@@ -635,7 +635,7 @@ model TradeExecution {
 }
 
 model TradeJournal {
-  id              String           @id @default(uuid())
+  id              String           @id
   userId          String
   paperTradeId    String?
   liveTradeId     String?
@@ -649,7 +649,7 @@ model TradeJournal {
   mistakesMade    String[]
   rating          Int?
   createdAt       DateTime         @default(now())
-  updatedAt       DateTime @updatedAt
+  updatedAt       DateTime
   LiveTrade       LiveTrade?       @relation(fields: [liveTradeId], references: [id])
   PaperTrade      PaperTrade?      @relation(fields: [paperTradeId], references: [id])
   User            User             @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -659,7 +659,7 @@ model TradeJournal {
 }
 
 model Trendline {
-  id            String        @id @default(uuid())
+  id            String        @id
   instrumentId  String
   trendlineType TrendlineType
   startTime     DateTime
@@ -672,7 +672,7 @@ model Trendline {
   isActive      Boolean       @default(true)
   confidence    Float
   createdAt     DateTime      @default(now())
-  updatedAt     DateTime @updatedAt
+  updatedAt     DateTime
   Signal        Signal[]
   Instrument    Instrument    @relation(fields: [instrumentId], references: [id], onDelete: Cascade)
 
@@ -681,11 +681,11 @@ model Trendline {
 }
 
 model User {
-  id             String           @id @default(uuid())
+  id             String           @id
   email          String           @unique
   name           String?
   createdAt      DateTime         @default(now())
-  updatedAt      DateTime @updatedAt
+  updatedAt      DateTime
   AIConversation AIConversation[]
   Agent          Agent[]
   Backtest       Backtest[]

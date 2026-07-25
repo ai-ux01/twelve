@@ -7,6 +7,7 @@ import {
   HttpException,
   HttpStatus,
 } from '@nestjs/common';
+import { IsString, IsNotEmpty } from 'class-validator';
 import { PromptService, ParsedPrompt } from './prompt.service';
 import { MarketDataService } from '../market-data/market-data.service';
 import { QuantService, QuantAnalysisResult, ScoreResult } from '../quant/quant.service';
@@ -14,6 +15,8 @@ import { AiService, Recommendation } from '../ai/ai.service';
 import { PrismaService } from '../database/prisma.service';
 
 class SubmitPromptDto {
+  @IsString()
+  @IsNotEmpty()
   prompt!: string;
 }
 
