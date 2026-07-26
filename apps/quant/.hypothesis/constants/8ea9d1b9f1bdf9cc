@@ -1,0 +1,4 @@
+# file: /Users/anshulkumar/Desktop/twelve/apps/quant/market_data/router.py
+# hypothesis_version: 6.141.1
+
+[100, 1000, ',', '/api/market-data', '/health', '/ohlcv', '/search', '/spot-prices', '/symbols', 'Max results', 'Number of candles', 'Search query', 'bot-ai', 'candles', 'collection', 'connected', 'count', 'database', 'day', 'market-data', 'mongodb', 'price', 'query', 'source', 'startup', 'success', 'symbol', 'symbols', 'timeframe', 'timestamp']

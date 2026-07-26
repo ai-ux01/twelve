@@ -26,6 +26,7 @@ import {
   type RiskValidationResult,
 } from '@/lib/api-client';
 import { AlertCircle } from 'lucide-react';
+import { DEFAULT_USER_ID } from '@/lib/constants';
 
 export default function AnalysisPage() {
   const [recommendation, setRecommendation] = useState<PromptResponse | null>(null);
@@ -55,7 +56,7 @@ export default function AnalysisPage() {
 
     try {
       const tradeRequest: TradeRequest = {
-        userId: 'demo-user', // TODO: Get from auth context
+        userId: DEFAULT_USER_ID,
         symbol: recommendation.recommendation.symbol,
         action: recommendation.recommendation.action as 'BUY' | 'SELL',
         quantity: 1, // Default quantity, could be made configurable
@@ -90,7 +91,7 @@ export default function AnalysisPage() {
     try {
       // Build trade request
       const tradeRequest: TradeRequest = {
-        userId: 'demo-user', // TODO: Get from auth context
+        userId: DEFAULT_USER_ID,
         symbol: recommendation.recommendation.symbol,
         action: recommendation.recommendation.action as 'BUY' | 'SELL',
         quantity: tradeQuantity,
@@ -144,7 +145,7 @@ export default function AnalysisPage() {
 
     try {
       const tradeRequest: TradeRequest = {
-        userId: 'demo-user', // TODO: Get from auth context
+        userId: DEFAULT_USER_ID,
         symbol: recommendation.recommendation.symbol,
         action: recommendation.recommendation.action as 'BUY' | 'SELL',
         quantity: tradeQuantity,

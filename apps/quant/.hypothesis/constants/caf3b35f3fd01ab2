@@ -1,0 +1,4 @@
+# file: /Users/anshulkumar/Desktop/twelve/apps/quant/backtesting/data_loader.py
+# hypothesis_version: 6.141.1
+
+[30.0, 365, 1000, '%Y-%m-%d', 'close', 'closes', 'day', 'high', 'highs', 'low', 'lows', 'open', 'opens', 'r', 'timestamp', 'timestamps', 'utf-8', 'volume', 'volumes']

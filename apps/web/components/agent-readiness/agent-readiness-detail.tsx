@@ -35,6 +35,12 @@ export function AgentReadinessDetail({ readiness, onAdvanced }: AgentReadinessDe
   const isAtControlledLive = readiness.current_stage === ReadinessStage.CONTROLLED_LIVE;
   const canAdvance = nextStage !== null && nextStage !== ReadinessStage.AUTONOMOUS;
 
+  // Default values for optional nested objects
+  const health = readiness.health || { data_health: 'disconnected', quant_engine_health: 'stopped', ai_health: 'disconnected', risk_engine_health: 'inactive', last_updated: '' };
+  const metrics = readiness.metrics || { trade_count: 0, win_rate: 0, profit_factor: 0, expectancy: 0, max_drawdown: 0 };
+  const calibration = readiness.calibration || { expected_probability: 0, actual_probability: 0 };
+  const validations = readiness.validations || { backtest_status: 'pending', out_of_sample_status: 'pending', walk_forward_status: 'pending', paper_trading_status: 'not_started', shadow_mode_status: 'not_started' };
+
   const handleAdvance = async () => {
     if (!reason.trim()) return;
     setAdvanceError(null);
@@ -53,14 +59,14 @@ export function AgentReadinessDetail({ readiness, onAdvanced }: AgentReadinessDe
 
   return (
     <div className="space-y-6">
-      <HealthIndicators health={readiness.health} />
+      <HealthIndicators health={health} />
       <StageProgression currentStage={readiness.current_stage} />
       <ValidationStatus
-        validations={readiness.validations}
-        metrics={readiness.metrics}
-        calibration={readiness.calibration}
+        validations={validations}
+        metrics={metrics}
+        calibration={calibration}
       />
-      <PerformanceMetrics metrics={readiness.metrics} calibration={readiness.calibration} />
+      <PerformanceMetrics metrics={metrics} calibration={calibration} />
 
       {/* Advance Stage Section */}
       <div className="rounded-lg border bg-white p-4 space-y-3">

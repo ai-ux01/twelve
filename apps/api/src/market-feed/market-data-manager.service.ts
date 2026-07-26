@@ -1,4 +1,4 @@
-import { Injectable, Logger, Inject } from '@nestjs/common';
+import { Injectable, Logger, Inject, OnModuleInit } from '@nestjs/common';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { PrismaService } from '../database/prisma.service';
 import { KotakSessionStore } from '../trading/kotak-neo-session.store';
@@ -18,7 +18,7 @@ import {
 } from './interfaces';
 
 @Injectable()
-export class MarketDataManager {
+export class MarketDataManager implements OnModuleInit {
   private readonly logger = new Logger(MarketDataManager.name);
 
   constructor(
@@ -33,6 +33,50 @@ export class MarketDataManager {
     private readonly config: MarketFeedConfig,
   ) {
     this.wireProviderCallbacks();
+  }
+
+  /**
+   * Auto-start in mock mode with default subscriptions, or wait for Kotak session in live mode.
+   */
+  async onModuleInit(): Promise<void> {
+    if (this.config.isMockMode) {
+      this.logger.log('Mock mode enabled — auto-connecting market data provider...');
+      try {
+        await this.provider.connect('mock-auth', 'mock-sid', 'mock-dc');
+
+        // Subscribe to some default instruments for demo
+        const defaultSubscriptions = [
+          'nse_cm|11536&1',   // NIFTY 50
+          'nse_cm|11717&1',   // NIFTY BANK
+          'nse_fo|44283&1',   // NIFTY 24000CE
+          'nse_fo|44284&1',   // NIFTY 24000PE
+          'nse_fo|44285&1',   // NIFTY 24100CE
+          'nse_fo|44286&1',   // NIFTY 24100PE
+          'nse_fo|44287&1',   // NIFTY 23900CE
+          'nse_fo|44288&1',   // NIFTY 23900PE
+        ];
+        this.provider.subscribe(defaultSubscriptions);
+        this.logger.log(`Mock mode: subscribed to ${defaultSubscriptions.length} default instruments`);
+      } catch (error) {
+        this.logger.error(`Failed to auto-start mock mode: ${(error as Error).message}`);
+      }
+    } else {
+      // Real mode: try to connect if there's an existing session
+      const session = this.sessionStore.getLatest();
+      if (session) {
+        this.logger.log('Found existing Kotak session, connecting to HSM...');
+        try {
+          await this.connect();
+          // Subscribe to NIFTY 50 index by default
+          this.provider.subscribe(['nse_cm|26000&1', 'nse_cm|26009&1']);
+          this.logger.log('HSM connected with existing session');
+        } catch (error) {
+          this.logger.warn(`Failed to connect with existing session: ${(error as Error).message}`);
+        }
+      } else {
+        this.logger.log('Real mode: waiting for Kotak login to connect HSM...');
+      }
+    }
   }
 
   /**

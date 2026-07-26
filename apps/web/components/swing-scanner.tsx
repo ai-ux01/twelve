@@ -13,6 +13,7 @@ import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Loader2, TrendingUp } from 'lucide-react';
 import { apiClient, SwingScanResponse } from '@/lib/api-client';
+import { DEFAULT_USER_ID } from '@/lib/constants';
 
 export interface SwingScannerProps {
   userId?: string;
@@ -29,7 +30,7 @@ export interface SwingScannerProps {
  * - Loading state during scan
  * - Error handling and display
  */
-export function SwingScanner({ userId = 'user-123', onScanComplete, onScanError }: SwingScannerProps) {
+export function SwingScanner({ userId = DEFAULT_USER_ID, onScanComplete, onScanError }: SwingScannerProps) {
   const [isScanning, setIsScanning] = useState(false);
   const [minScore, setMinScore] = useState(60);
   const [maxResults, setMaxResults] = useState(20);

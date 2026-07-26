@@ -16,6 +16,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Loader2, TrendingUp } from 'lucide-react';
 import { apiClient, SwingCandidate } from '@/lib/api-client';
+import { DEFAULT_USER_ID } from '@/lib/constants';
 import { kotakApi } from '@/lib/kotak-api';
 
 export interface SwingRecommendationCardProps {
@@ -41,7 +42,7 @@ export interface SwingRecommendationCardProps {
  */
 export function SwingRecommendationCard({
   candidate,
-  userId = 'user-123',
+  userId = DEFAULT_USER_ID,
   onPaperTradeSuccess,
   onPaperTradeError,
 }: SwingRecommendationCardProps) {

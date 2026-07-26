@@ -18,6 +18,8 @@ from .models import (
     SourceMetrics,
 )
 from .behavior_detector import BehaviorDetector
+from .data_source_selector import DataSourceSelector, DataSourceResult
+from .live_analysis import LiveAnalyzer, SlippageSummary, LiveAnalysisResult
 from .report_generator import ReportGenerator
 from .source_comparator import SourceComparator
 from .router import router
@@ -31,6 +33,11 @@ __all__ = [
     "SourceComparison",
     "SourceMetrics",
     "BehaviorDetector",
+    "DataSourceSelector",
+    "DataSourceResult",
+    "LiveAnalyzer",
+    "SlippageSummary",
+    "LiveAnalysisResult",
     "ReportGenerator",
     "SourceComparator",
     "router",

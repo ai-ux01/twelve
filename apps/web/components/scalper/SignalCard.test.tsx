@@ -150,4 +150,154 @@ describe('SignalCard', () => {
     expect(screen.queryByText('Strike Price')).not.toBeInTheDocument();
     expect(screen.queryByText('Expiry Date')).not.toBeInTheDocument();
   });
+
+  describe('Trendline display', () => {
+    it('should display trendline direction when data is available', () => {
+      const signalWithTrendline: SignalData = {
+        ...mockBuySignal,
+        trendlineDirection: 'UPTREND',
+      };
+      render(<SignalCard signal={signalWithTrendline} />);
+      expect(screen.getByText('UPTREND')).toBeInTheDocument();
+    });
+
+    it('should display DOWNTREND direction when provided', () => {
+      const signalWithTrendline: SignalData = {
+        ...mockBuySignal,
+        trendlineDirection: 'DOWNTREND',
+      };
+      render(<SignalCard signal={signalWithTrendline} />);
+      expect(screen.getByText('DOWNTREND')).toBeInTheDocument();
+    });
+
+    it('should display SIDEWAYS direction when provided', () => {
+      const signalWithTrendline: SignalData = {
+        ...mockBuySignal,
+        trendlineDirection: 'SIDEWAYS',
+      };
+      render(<SignalCard signal={signalWithTrendline} />);
+      expect(screen.getByText('SIDEWAYS')).toBeInTheDocument();
+    });
+
+    it('should display breakout badge when breakoutStatus is BREAKOUT', () => {
+      const signalWithBreakout: SignalData = {
+        ...mockBuySignal,
+        breakoutStatus: 'BREAKOUT',
+      };
+      render(<SignalCard signal={signalWithBreakout} />);
+      expect(screen.getByText('BREAKOUT')).toBeInTheDocument();
+      // The Badge should be rendered (default variant for BREAKOUT)
+      const badge = screen.getByText('BREAKOUT').closest('[class*="badge"]') ||
+        screen.getByText('BREAKOUT').closest('.inline-flex');
+      expect(badge).toBeInTheDocument();
+    });
+
+    it('should display breakdown badge with destructive variant when breakoutStatus is BREAKDOWN', () => {
+      const signalWithBreakdown: SignalData = {
+        ...mockBuySignal,
+        breakoutStatus: 'BREAKDOWN',
+      };
+      render(<SignalCard signal={signalWithBreakdown} />);
+      expect(screen.getByText('BREAKDOWN')).toBeInTheDocument();
+    });
+
+    it('should display confirmed badge when breakoutStatus is CONFIRMED', () => {
+      const signalWithConfirmed: SignalData = {
+        ...mockBuySignal,
+        breakoutStatus: 'CONFIRMED',
+      };
+      render(<SignalCard signal={signalWithConfirmed} />);
+      expect(screen.getByText('CONFIRMED')).toBeInTheDocument();
+    });
+
+    it('should display "N/A" for trendline direction when not provided', () => {
+      const signalWithoutTrendline: SignalData = {
+        ...mockBuySignal,
+        trendlineDirection: undefined,
+        breakoutStatus: undefined,
+      };
+      render(<SignalCard signal={signalWithoutTrendline} />);
+      // The Direction field should show N/A
+      const directionLabel = screen.getByText('Direction:');
+      const directionContainer = directionLabel.closest('div');
+      expect(directionContainer).toHaveTextContent('N/A');
+    });
+
+    it('should display "N/A" for breakout when breakoutStatus is not provided', () => {
+      const signalWithoutBreakout: SignalData = {
+        ...mockBuySignal,
+        breakoutStatus: undefined,
+      };
+      render(<SignalCard signal={signalWithoutBreakout} />);
+      const breakoutLabel = screen.getByText('Breakout:');
+      const breakoutContainer = breakoutLabel.closest('div');
+      expect(breakoutContainer).toHaveTextContent('N/A');
+    });
+
+    it('should display "N/A" for breakout when breakoutStatus is null', () => {
+      const signalWithNullBreakout: SignalData = {
+        ...mockBuySignal,
+        breakoutStatus: null,
+      };
+      render(<SignalCard signal={signalWithNullBreakout} />);
+      const breakoutLabel = screen.getByText('Breakout:');
+      const breakoutContainer = breakoutLabel.closest('div');
+      expect(breakoutContainer).toHaveTextContent('N/A');
+    });
+
+    it('should display formatted trendline support level when provided', () => {
+      const signalWithLevels: SignalData = {
+        ...mockBuySignal,
+        trendlineSupportLevel: 19200.75,
+      };
+      render(<SignalCard signal={signalWithLevels} />);
+      expect(screen.getByText('₹19200.75')).toBeInTheDocument();
+    });
+
+    it('should display formatted trendline resistance level when provided', () => {
+      const signalWithLevels: SignalData = {
+        ...mockBuySignal,
+        trendlineResistanceLevel: 19800.50,
+      };
+      render(<SignalCard signal={signalWithLevels} />);
+      expect(screen.getByText('₹19800.50')).toBeInTheDocument();
+    });
+
+    it('should display "N/A" for trendline support level when not provided', () => {
+      const signalWithoutLevels: SignalData = {
+        ...mockBuySignal,
+        trendlineSupportLevel: undefined,
+        trendlineResistanceLevel: undefined,
+      };
+      render(<SignalCard signal={signalWithoutLevels} />);
+      const tlSupportLabel = screen.getByText('TL Support:');
+      const tlSupportContainer = tlSupportLabel.closest('div');
+      expect(tlSupportContainer).toHaveTextContent('N/A');
+    });
+
+    it('should display "N/A" for trendline resistance level when not provided', () => {
+      const signalWithoutLevels: SignalData = {
+        ...mockBuySignal,
+        trendlineSupportLevel: undefined,
+        trendlineResistanceLevel: undefined,
+      };
+      render(<SignalCard signal={signalWithoutLevels} />);
+      const tlResistanceLabel = screen.getByText('TL Resistance:');
+      const tlResistanceContainer = tlResistanceLabel.closest('div');
+      expect(tlResistanceContainer).toHaveTextContent('N/A');
+    });
+
+    it('should display NONE breakoutStatus as plain text without badge', () => {
+      const signalWithNone: SignalData = {
+        ...mockBuySignal,
+        breakoutStatus: 'NONE',
+      };
+      render(<SignalCard signal={signalWithNone} />);
+      const breakoutLabel = screen.getByText('Breakout:');
+      const breakoutContainer = breakoutLabel.closest('div');
+      expect(breakoutContainer).toHaveTextContent('NONE');
+      // Should not be rendered as a Badge (no badge class)
+      expect(breakoutContainer?.querySelector('[class*="badge"]')).not.toBeInTheDocument();
+    });
+  });
 });

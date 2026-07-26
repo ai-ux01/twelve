@@ -22,6 +22,7 @@ export default function AgentsPage() {
   const [selectedAgentId, setSelectedAgentId] = useState<string | null>(null);
   const [typeFilter, setTypeFilter] = useState<AgentType | null>(null);
   const [statusFilter, setStatusFilter] = useState<AgentStatus | null>(null);
+  const [transitionError, setTransitionError] = useState<string | null>(null);
 
   const {
     agents,
@@ -43,8 +44,10 @@ export default function AgentsPage() {
   const {
     createAgent,
     updateAgent,
+    deleteAgent,
     isCreating,
     createError,
+    updateError,
   } = useAgentMutations();
 
   const handleSelectAgent = useCallback((agentId: string) => {
@@ -72,6 +75,7 @@ export default function AgentsPage() {
 
   const handleStatusChange = useCallback(
     async (agentId: string, newStatus: string, reason: string) => {
+      setTransitionError(null);
       const updated = await updateAgent(agentId, {
         status: newStatus as AgentStatus,
         status_reason: reason,
@@ -79,9 +83,25 @@ export default function AgentsPage() {
       if (updated) {
         await refetchAgents();
         await refetchDetail();
+      } else {
+        // updateAgent returned null — fetch the error from the hook
+        setTransitionError(`Failed to transition to ${newStatus.replace('_', ' ')}`);
       }
     },
     [updateAgent, refetchAgents, refetchDetail]
+  );
+
+  const handleDeleteAgent = useCallback(
+    async (agentId: string) => {
+      const confirmed = window.confirm('Are you sure you want to delete this agent? This cannot be undone.');
+      if (!confirmed) return;
+      const success = await deleteAgent(agentId);
+      if (success) {
+        setSelectedAgentId(null);
+        await refetchAgents();
+      }
+    },
+    [deleteAgent, refetchAgents]
   );
 
   return (
@@ -125,7 +145,9 @@ export default function AgentsPage() {
             decisions={decisions}
             isLoading={isLoadingDetail}
             error={detailError}
+            transitionError={updateError || transitionError}
             onStatusChange={handleStatusChange}
+            onDelete={handleDeleteAgent}
           />
         </div>
       </div>

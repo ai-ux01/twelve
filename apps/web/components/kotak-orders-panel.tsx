@@ -157,60 +157,51 @@ export function KotakOrdersPanel() {
     return <Badge variant="outline" className="text-xs">{status}</Badge>;
   };
 
+  // Separate orders into active and cancelled
+  const activeOrders = orders.filter((o) => !o.ordSt?.includes('cancelled'));
+  const cancelledOrders = orders.filter((o) => o.ordSt?.includes('cancelled'));
+
+  const [activeTab, setActiveTab] = useState<'active' | 'cancelled'>('active');
+
   if (!kotakApi.getSessionId()) return null;
 
-  return (
-    <div className="rounded-lg border bg-card">
-      <div className="p-6 border-b flex items-center justify-between">
-        <h2 className="text-xl font-semibold">Order Book</h2>
-        <Button variant="outline" size="sm" onClick={fetchOrders} disabled={isLoading}>
-          <RefreshCw className={`h-4 w-4 mr-1 ${isLoading ? 'animate-spin' : ''}`} />
-          Refresh
-        </Button>
-      </div>
-
-      {error && (
-        <div className="mx-6 mt-4 rounded-md bg-red-50 border border-red-200 p-3 text-sm text-red-700">{error}</div>
-      )}
-      {successMsg && (
-        <div className="mx-6 mt-4 rounded-md bg-green-50 border border-green-200 p-3 text-sm text-green-700">{successMsg}</div>
-      )}
-
-      {orders.length === 0 && !isLoading ? (
-        <div className="p-6 text-center text-muted-foreground">No orders today</div>
-      ) : (
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b bg-muted/50">
-                <th className="text-left p-3 font-medium">Symbol</th>
-                <th className="text-left p-3 font-medium">Type</th>
-                <th className="text-left p-3 font-medium">Status</th>
-                <th className="text-right p-3 font-medium">Qty</th>
-                <th className="text-right p-3 font-medium">Price</th>
-                <th className="text-left p-3 font-medium">Product</th>
-                <th className="text-right p-3 font-medium">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {orders.map((o) => {
-                const canModify = o.ordSt?.includes('open') || o.ordSt?.includes('pending') || o.ordSt?.includes('after market');
-                const canCancel = canModify;
-                return (
-                  <tr key={o.nOrdNo} className="border-b hover:bg-muted/30">
-                    <td className="p-3 font-medium">
-                      {o.trdSym}
-                      <span className={`ml-2 text-xs ${o.trnsTp === 'B' ? 'text-green-600' : 'text-red-600'}`}>
-                        {o.trnsTp === 'B' ? 'BUY' : 'SELL'}
-                      </span>
-                    </td>
-                    <td className="p-3 text-muted-foreground">{o.prcTp === 'MKT' ? 'Market' : o.prcTp === 'L' ? 'Limit' : o.prcTp}</td>
-                    <td className="p-3">{getStatusBadge(o.ordSt)}</td>
-                    <td className="p-3 text-right">{o.qty}</td>
-                    <td className="p-3 text-right">₹{parseFloat(o.prc || '0').toFixed(2)}</td>
-                    <td className="p-3">
-                      <Badge variant="outline" className="text-xs">{o.prod}</Badge>
-                    </td>
+  const renderOrderTable = (orderList: Order[], showActions: boolean) => {
+    if (orderList.length === 0 && !isLoading) {
+      return <div className="p-6 text-center text-muted-foreground">No orders</div>;
+    }
+    return (
+      <div className="overflow-x-auto">
+        <table className="w-full text-sm">
+          <thead>
+            <tr className="border-b bg-muted/50">
+              <th className="text-left p-3 font-medium">Symbol</th>
+              <th className="text-left p-3 font-medium">Type</th>
+              <th className="text-left p-3 font-medium">Status</th>
+              <th className="text-right p-3 font-medium">Qty</th>
+              <th className="text-right p-3 font-medium">Price</th>
+              <th className="text-left p-3 font-medium">Product</th>
+              {showActions && <th className="text-right p-3 font-medium">Actions</th>}
+            </tr>
+          </thead>
+          <tbody>
+            {orderList.map((o) => {
+              const canModify = o.ordSt?.includes('open') || o.ordSt?.includes('pending') || o.ordSt?.includes('after market');
+              return (
+                <tr key={o.nOrdNo} className="border-b hover:bg-muted/30">
+                  <td className="p-3 font-medium">
+                    {o.trdSym}
+                    <span className={`ml-2 text-xs ${o.trnsTp === 'B' ? 'text-green-600' : 'text-red-600'}`}>
+                      {o.trnsTp === 'B' ? 'BUY' : 'SELL'}
+                    </span>
+                  </td>
+                  <td className="p-3 text-muted-foreground">{o.prcTp === 'MKT' ? 'Market' : o.prcTp === 'L' ? 'Limit' : o.prcTp}</td>
+                  <td className="p-3">{getStatusBadge(o.ordSt)}</td>
+                  <td className="p-3 text-right">{o.qty}</td>
+                  <td className="p-3 text-right">₹{parseFloat(o.prc || '0').toFixed(2)}</td>
+                  <td className="p-3">
+                    <Badge variant="outline" className="text-xs">{o.prod}</Badge>
+                  </td>
+                  {showActions && (
                     <td className="p-3 text-right">
                       {canModify && (
                         <div className="flex gap-1 justify-end">
@@ -233,13 +224,59 @@ export function KotakOrdersPanel() {
                         </div>
                       )}
                     </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
+                  )}
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+    );
+  };
+
+  return (
+    <div className="rounded-lg border bg-card">
+      <div className="p-6 border-b flex items-center justify-between">
+        <h2 className="text-xl font-semibold">Order Book</h2>
+        <Button variant="outline" size="sm" onClick={fetchOrders} disabled={isLoading}>
+          <RefreshCw className={`h-4 w-4 mr-1 ${isLoading ? 'animate-spin' : ''}`} />
+          Refresh
+        </Button>
+      </div>
+
+      {/* Tabs */}
+      <div className="flex border-b">
+        <button
+          className={`px-4 py-2.5 text-sm font-medium transition-colors relative ${
+            activeTab === 'active'
+              ? 'text-foreground after:absolute after:bottom-0 after:left-0 after:right-0 after:h-0.5 after:bg-primary'
+              : 'text-muted-foreground hover:text-foreground'
+          }`}
+          onClick={() => setActiveTab('active')}
+        >
+          Active ({activeOrders.length})
+        </button>
+        <button
+          className={`px-4 py-2.5 text-sm font-medium transition-colors relative ${
+            activeTab === 'cancelled'
+              ? 'text-foreground after:absolute after:bottom-0 after:left-0 after:right-0 after:h-0.5 after:bg-primary'
+              : 'text-muted-foreground hover:text-foreground'
+          }`}
+          onClick={() => setActiveTab('cancelled')}
+        >
+          Cancelled ({cancelledOrders.length})
+        </button>
+      </div>
+
+      {error && (
+        <div className="mx-6 mt-4 rounded-md bg-red-50 border border-red-200 p-3 text-sm text-red-700">{error}</div>
       )}
+      {successMsg && (
+        <div className="mx-6 mt-4 rounded-md bg-green-50 border border-green-200 p-3 text-sm text-green-700">{successMsg}</div>
+      )}
+
+      {activeTab === 'active' && renderOrderTable(activeOrders, true)}
+      {activeTab === 'cancelled' && renderOrderTable(cancelledOrders, false)}
 
       {/* Modify Dialog */}
       <Dialog open={!!modifyOrder} onOpenChange={(open) => !open && setModifyOrder(null)}>

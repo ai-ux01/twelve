@@ -82,12 +82,14 @@ export class MarketFeedGateway
    */
   @SubscribeMessage('subscribe')
   handleSubscribe(
-    @MessageBody() data: { token: string; type?: 'tick' | 'depth' },
+    @MessageBody() data: { token: string; type?: 'tick' | 'depth' | 'all' },
     @ConnectedSocket() client: Socket,
   ): { event: string; data: { success: boolean; token: string } } {
     const { token, type = 'tick' } = data;
 
-    if (type === 'depth') {
+    if (type === 'all') {
+      client.join('all-ticks');
+    } else if (type === 'depth') {
       client.join(`depth:${token}`);
     } else {
       client.join(`token:${token}`);

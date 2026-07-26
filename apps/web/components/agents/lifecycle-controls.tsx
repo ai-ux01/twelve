@@ -20,16 +20,18 @@ export interface LifecycleControlsProps {
 }
 
 const TRANSITION_LABELS: Record<string, string> = {
-  TESTING: 'Start Testing',
-  PAPER: 'Promote to Paper',
-  SHADOW: 'Promote to Shadow',
+  DRAFT: 'Back to Draft',
+  TESTING: 'Back to Testing',
+  PAPER: 'Demote to Paper',
+  SHADOW: 'Demote to Shadow',
   CONTROLLED_LIVE: 'Go Live (Controlled)',
   PAUSED: 'Pause',
   DISABLED: 'Disable',
 };
 
 const TRANSITION_STYLES: Record<string, string> = {
-  TESTING: 'bg-green-600 hover:bg-green-700 text-white',
+  DRAFT: 'bg-gray-500 hover:bg-gray-600 text-white',
+  TESTING: 'bg-gray-500 hover:bg-gray-600 text-white',
   PAPER: 'bg-green-600 hover:bg-green-700 text-white',
   SHADOW: 'bg-green-600 hover:bg-green-700 text-white',
   CONTROLLED_LIVE: 'bg-green-600 hover:bg-green-700 text-white',

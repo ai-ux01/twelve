@@ -1,6 +1,7 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import dynamic from 'next/dynamic';
 import { Card, CardContent } from '@/components/ui/card';
 import {
   Table,
@@ -17,7 +18,11 @@ import { SwingScanner } from '@/components/swing-scanner';
 import { SwingAnalysisPanel } from '@/components/swing-analysis-panel';
 import { SwingRecommendationCard } from '@/components/swing-recommendation-card';
 import { SwingCandidate, SwingScanResponse } from '@/lib/api-client';
+import type { OHLCVData } from '@/lib/api-client';
 import { kotakApi } from '@/lib/kotak-api';
+import { DEFAULT_USER_ID } from '@/lib/constants';
+
+const SwingMiniChart = dynamic(() => import('@/components/charts/SwingMiniChart'), { ssr: false });
 
 /**
  * Swing Scanner Page
@@ -37,7 +42,37 @@ export default function SwingScannerPage() {
   const [selectedCandidate, setSelectedCandidate] = useState<SwingCandidate | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
-  const [userId] = useState('user-123'); // TODO: Get from auth context
+  const [userId] = useState(DEFAULT_USER_ID);
+  const [candidateOhlcv, setCandidateOhlcv] = useState<Map<string, OHLCVData[]>>(new Map());
+
+  // Fetch OHLCV data for each candidate when scan results change
+  useEffect(() => {
+    if (!scanResults || scanResults.candidates.length === 0) {
+      setCandidateOhlcv(new Map());
+      return;
+    }
+
+    const fetchAll = async () => {
+      const newMap = new Map<string, OHLCVData[]>();
+      await Promise.all(
+        scanResults.candidates.map(async (candidate) => {
+          try {
+            const res = await fetch(
+              `http://localhost:8000/api/market-data/ohlcv?symbol=${candidate.symbol}&timeframe=day&limit=30`
+            );
+            if (res.ok) {
+              const data = await res.json();
+              newMap.set(candidate.symbol, Array.isArray(data) ? data : data.data ?? []);
+            }
+          } catch {
+            // Chart will show empty state for this candidate
+          }
+        })
+      );
+      setCandidateOhlcv(newMap);
+    };
+    fetchAll();
+  }, [scanResults]);
 
   const handleScanComplete = (results: SwingScanResponse) => {
     setScanResults(results);
@@ -174,6 +209,7 @@ export default function SwingScannerPage() {
                   <TableHeader>
                     <TableRow>
                       <TableHead>Symbol</TableHead>
+                      <TableHead>Chart</TableHead>
                       <TableHead>Score</TableHead>
                       <TableHead>Trend</TableHead>
                       <TableHead className="text-right">R:R</TableHead>
@@ -192,6 +228,22 @@ export default function SwingScannerPage() {
                         onClick={() => handleCandidateClick(candidate)}
                       >
                         <TableCell className="font-medium">{candidate.symbol}</TableCell>
+                        <TableCell>
+                          {candidateOhlcv.get(candidate.symbol)?.length ? (
+                            <div className="w-[140px]">
+                              <SwingMiniChart
+                                symbol={candidate.symbol}
+                                data={candidateOhlcv.get(candidate.symbol)!}
+                                entry={candidate.entry}
+                                stopLoss={candidate.stopLoss}
+                                target={candidate.target}
+                                onClick={() => handleCandidateClick(candidate)}
+                              />
+                            </div>
+                          ) : (
+                            <span className="text-xs text-muted-foreground">—</span>
+                          )}
+                        </TableCell>
                         <TableCell>
                           <Badge variant="outline">{candidate.score.toFixed(1)}</Badge>
                         </TableCell>

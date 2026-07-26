@@ -72,7 +72,7 @@ export class SwingService {
 
     // Extract parameters with defaults
     const minScore = scanRequest.minScore ?? 60;
-    const maxResults = scanRequest.maxResults ?? 20;
+    const maxResults = scanRequest.maxResults ?? 50;
     const sectorFilter = scanRequest.sectorFilter;
     const userId = scanRequest.userId;
 
@@ -990,7 +990,7 @@ export class SwingService {
   async initializeDefaultUniverse() {
     this.logger.log('Initializing default NSE F&O stocks universe');
 
-    // Default NSE F&O stocks with sector and approximate market cap (in crores)
+    // NSE F&O stocks universe – NIFTY 200 coverage (approximate market caps in crores)
     const defaultStocks = [
       // Banking & Finance
       { symbol: 'HDFCBANK', sector: 'Banking', marketCap: 1200000 },
@@ -999,8 +999,26 @@ export class SwingService {
       { symbol: 'AXISBANK', sector: 'Banking', marketCap: 300000 },
       { symbol: 'KOTAKBANK', sector: 'Banking', marketCap: 350000 },
       { symbol: 'INDUSINDBK', sector: 'Banking', marketCap: 120000 },
+      { symbol: 'BANKBARODA', sector: 'Banking', marketCap: 130000 },
+      { symbol: 'PNB', sector: 'Banking', marketCap: 110000 },
+      { symbol: 'FEDERALBNK', sector: 'Banking', marketCap: 45000 },
+      { symbol: 'IDFCFIRSTB', sector: 'Banking', marketCap: 55000 },
+      { symbol: 'AUBANK', sector: 'Banking', marketCap: 50000 },
+      { symbol: 'BANDHANBNK', sector: 'Banking', marketCap: 35000 },
+      { symbol: 'CANBK', sector: 'Banking', marketCap: 95000 },
       { symbol: 'BAJFINANCE', sector: 'Finance', marketCap: 400000 },
       { symbol: 'BAJAJFINSV', sector: 'Finance', marketCap: 250000 },
+      { symbol: 'SBILIFE', sector: 'Insurance', marketCap: 150000 },
+      { symbol: 'HDFCLIFE', sector: 'Insurance', marketCap: 140000 },
+      { symbol: 'ICICIPRULI', sector: 'Insurance', marketCap: 80000 },
+      { symbol: 'ICICIGI', sector: 'Insurance', marketCap: 70000 },
+      { symbol: 'SBICARD', sector: 'Finance', marketCap: 75000 },
+      { symbol: 'CHOLAFIN', sector: 'Finance', marketCap: 100000 },
+      { symbol: 'MANAPPURAM', sector: 'Finance', marketCap: 25000 },
+      { symbol: 'MUTHOOTFIN', sector: 'Finance', marketCap: 55000 },
+      { symbol: 'PFC', sector: 'Finance', marketCap: 120000 },
+      { symbol: 'RECLTD', sector: 'Finance', marketCap: 110000 },
+      { symbol: 'LICHSGFIN', sector: 'Finance', marketCap: 40000 },
 
       // IT
       { symbol: 'TCS', sector: 'IT', marketCap: 1300000 },
@@ -1008,50 +1026,189 @@ export class SwingService {
       { symbol: 'WIPRO', sector: 'IT', marketCap: 250000 },
       { symbol: 'HCLTECH', sector: 'IT', marketCap: 350000 },
       { symbol: 'TECHM', sector: 'IT', marketCap: 120000 },
+      { symbol: 'LTIM', sector: 'IT', marketCap: 160000 },
+      { symbol: 'MPHASIS', sector: 'IT', marketCap: 50000 },
+      { symbol: 'COFORGE', sector: 'IT', marketCap: 40000 },
+      { symbol: 'PERSISTENT', sector: 'IT', marketCap: 55000 },
+      { symbol: 'LTTS', sector: 'IT', marketCap: 50000 },
 
       // Oil & Gas
       { symbol: 'RELIANCE', sector: 'Oil & Gas', marketCap: 1700000 },
       { symbol: 'ONGC', sector: 'Oil & Gas', marketCap: 200000 },
       { symbol: 'BPCL', sector: 'Oil & Gas', marketCap: 100000 },
+      { symbol: 'IOC', sector: 'Oil & Gas', marketCap: 180000 },
+      { symbol: 'HINDPETRO', sector: 'Oil & Gas', marketCap: 70000 },
+      { symbol: 'GAIL', sector: 'Oil & Gas', marketCap: 130000 },
+      { symbol: 'PETRONET', sector: 'Oil & Gas', marketCap: 50000 },
+      { symbol: 'IGL', sector: 'Oil & Gas', marketCap: 35000 },
+      { symbol: 'MGL', sector: 'Oil & Gas', marketCap: 18000 },
 
       // Automobiles
       { symbol: 'MARUTI', sector: 'Automobile', marketCap: 350000 },
       { symbol: 'TATAMOTORS', sector: 'Automobile', marketCap: 300000 },
       { symbol: 'M&M', sector: 'Automobile', marketCap: 250000 },
       { symbol: 'BAJAJ-AUTO', sector: 'Automobile', marketCap: 200000 },
+      { symbol: 'HEROMOTOCO', sector: 'Automobile', marketCap: 100000 },
+      { symbol: 'EICHERMOT', sector: 'Automobile', marketCap: 120000 },
+      { symbol: 'ASHOKLEY', sector: 'Automobile', marketCap: 60000 },
+      { symbol: 'TVSMOTOR', sector: 'Automobile', marketCap: 80000 },
+      { symbol: 'MOTHERSON', sector: 'Auto Ancillary', marketCap: 80000 },
+      { symbol: 'BOSCHLTD', sector: 'Auto Ancillary', marketCap: 85000 },
+      { symbol: 'BALKRISIND', sector: 'Auto Ancillary', marketCap: 45000 },
+      { symbol: 'MRF', sector: 'Auto Ancillary', marketCap: 55000 },
+      { symbol: 'APOLLOTYRE', sector: 'Auto Ancillary', marketCap: 30000 },
+      { symbol: 'BHARATFORG', sector: 'Auto Ancillary', marketCap: 55000 },
 
-      // Metals
+      // Metals & Mining
       { symbol: 'TATASTEEL', sector: 'Metals', marketCap: 150000 },
       { symbol: 'HINDALCO', sector: 'Metals', marketCap: 100000 },
       { symbol: 'JSWSTEEL', sector: 'Metals', marketCap: 200000 },
+      { symbol: 'VEDL', sector: 'Metals', marketCap: 130000 },
+      { symbol: 'COALINDIA', sector: 'Mining', marketCap: 250000 },
+      { symbol: 'NMDC', sector: 'Mining', marketCap: 65000 },
+      { symbol: 'NATIONALUM', sector: 'Metals', marketCap: 35000 },
+      { symbol: 'SAIL', sector: 'Metals', marketCap: 45000 },
+      { symbol: 'JINDALSTEL', sector: 'Metals', marketCap: 80000 },
 
-      // Pharma
+      // Pharma & Healthcare
       { symbol: 'SUNPHARMA', sector: 'Pharma', marketCap: 350000 },
       { symbol: 'DRREDDY', sector: 'Pharma', marketCap: 100000 },
       { symbol: 'CIPLA', sector: 'Pharma', marketCap: 110000 },
       { symbol: 'DIVISLAB', sector: 'Pharma', marketCap: 120000 },
+      { symbol: 'APOLLOHOSP', sector: 'Healthcare', marketCap: 90000 },
+      { symbol: 'MAXHEALTH', sector: 'Healthcare', marketCap: 80000 },
+      { symbol: 'FORTIS', sector: 'Healthcare', marketCap: 40000 },
+      { symbol: 'BIOCON', sector: 'Pharma', marketCap: 35000 },
+      { symbol: 'LUPIN', sector: 'Pharma', marketCap: 80000 },
+      { symbol: 'AUROPHARMA', sector: 'Pharma', marketCap: 60000 },
+      { symbol: 'TORNTPHARM', sector: 'Pharma', marketCap: 75000 },
+      { symbol: 'ZYDUSLIFE', sector: 'Pharma', marketCap: 70000 },
+      { symbol: 'ALKEM', sector: 'Pharma', marketCap: 55000 },
+      { symbol: 'IPCALAB', sector: 'Pharma', marketCap: 30000 },
+      { symbol: 'LALPATHLAB', sector: 'Healthcare', marketCap: 25000 },
 
       // Telecom
       { symbol: 'BHARTIARTL', sector: 'Telecom', marketCap: 700000 },
+      { symbol: 'IDEA', sector: 'Telecom', marketCap: 60000 },
 
       // FMCG
       { symbol: 'HINDUNILVR', sector: 'FMCG', marketCap: 600000 },
       { symbol: 'ITC', sector: 'FMCG', marketCap: 550000 },
       { symbol: 'NESTLEIND', sector: 'FMCG', marketCap: 230000 },
+      { symbol: 'BRITANNIA', sector: 'FMCG', marketCap: 120000 },
+      { symbol: 'TATACONSUM', sector: 'FMCG', marketCap: 100000 },
+      { symbol: 'DABUR', sector: 'FMCG', marketCap: 90000 },
+      { symbol: 'MARICO', sector: 'FMCG', marketCap: 80000 },
+      { symbol: 'GODREJCP', sector: 'FMCG', marketCap: 110000 },
+      { symbol: 'COLPAL', sector: 'FMCG', marketCap: 80000 },
+      { symbol: 'UBL', sector: 'FMCG', marketCap: 50000 },
+      { symbol: 'MCDOWELL-N', sector: 'FMCG', marketCap: 75000 },
+      { symbol: 'VBL', sector: 'FMCG', marketCap: 140000 },
 
       // Infrastructure & Cement
       { symbol: 'LT', sector: 'Infrastructure', marketCap: 500000 },
       { symbol: 'ULTRACEMCO', sector: 'Cement', marketCap: 250000 },
       { symbol: 'GRASIM', sector: 'Cement', marketCap: 120000 },
+      { symbol: 'ADANIPORTS', sector: 'Infrastructure', marketCap: 250000 },
+      { symbol: 'SHREECEM', sector: 'Cement', marketCap: 100000 },
+      { symbol: 'AMBUJACEM', sector: 'Cement', marketCap: 110000 },
+      { symbol: 'ACC', sector: 'Cement', marketCap: 45000 },
+      { symbol: 'DALBHARAT', sector: 'Cement', marketCap: 40000 },
+      { symbol: 'RAMCOCEM', sector: 'Cement', marketCap: 25000 },
 
-      // Power
+      // Power & Utilities
       { symbol: 'POWERGRID', sector: 'Power', marketCap: 200000 },
       { symbol: 'NTPC', sector: 'Power', marketCap: 180000 },
+      { symbol: 'TATAPOWER', sector: 'Power', marketCap: 120000 },
+      { symbol: 'ADANIGREEN', sector: 'Power', marketCap: 200000 },
+      { symbol: 'NHPC', sector: 'Power', marketCap: 80000 },
+      { symbol: 'TORNTPOWER', sector: 'Power', marketCap: 60000 },
+      { symbol: 'CESC', sector: 'Power', marketCap: 20000 },
+      { symbol: 'SJVN', sector: 'Power', marketCap: 45000 },
+      { symbol: 'IREDA', sector: 'Power', marketCap: 50000 },
 
-      // Others
-      { symbol: 'ASIANPAINT', sector: 'Paints', marketCap: 300000 },
-      { symbol: 'ADANIPORTS', sector: 'Infrastructure', marketCap: 250000 },
+      // Consumer Goods & Retail
       { symbol: 'TITAN', sector: 'Consumer Goods', marketCap: 280000 },
+      { symbol: 'ASIANPAINT', sector: 'Paints', marketCap: 300000 },
+      { symbol: 'PAGEIND', sector: 'Consumer Goods', marketCap: 45000 },
+      { symbol: 'TRENT', sector: 'Retail', marketCap: 170000 },
+      { symbol: 'DMART', sector: 'Retail', marketCap: 280000 },
+      { symbol: 'BERGEPAINT', sector: 'Paints', marketCap: 65000 },
+      { symbol: 'PIDILITIND', sector: 'Chemicals', marketCap: 130000 },
+
+      // Capital Goods & Engineering
+      { symbol: 'SIEMENS', sector: 'Capital Goods', marketCap: 180000 },
+      { symbol: 'ABB', sector: 'Capital Goods', marketCap: 140000 },
+      { symbol: 'HAVELLS', sector: 'Capital Goods', marketCap: 100000 },
+      { symbol: 'BHEL', sector: 'Capital Goods', marketCap: 90000 },
+      { symbol: 'BEL', sector: 'Defence', marketCap: 130000 },
+      { symbol: 'HAL', sector: 'Defence', marketCap: 280000 },
+      { symbol: 'CUMMINSIND', sector: 'Capital Goods', marketCap: 75000 },
+      { symbol: 'VOLTAS', sector: 'Capital Goods', marketCap: 45000 },
+      { symbol: 'CROMPTON', sector: 'Capital Goods', marketCap: 25000 },
+      { symbol: 'POLYCAB', sector: 'Capital Goods', marketCap: 80000 },
+      { symbol: 'KAYNES', sector: 'Capital Goods', marketCap: 30000 },
+      { symbol: 'DIXON', sector: 'Capital Goods', marketCap: 75000 },
+
+      // Chemicals & Fertilizers
+      { symbol: 'SRF', sector: 'Chemicals', marketCap: 70000 },
+      { symbol: 'UPL', sector: 'Chemicals', marketCap: 50000 },
+      { symbol: 'ATUL', sector: 'Chemicals', marketCap: 25000 },
+      { symbol: 'DEEPAKNTR', sector: 'Chemicals', marketCap: 30000 },
+      { symbol: 'NAVINFLUOR', sector: 'Chemicals', marketCap: 35000 },
+      { symbol: 'PIIND', sector: 'Chemicals', marketCap: 55000 },
+      { symbol: 'COROMANDEL', sector: 'Fertilizers', marketCap: 50000 },
+      { symbol: 'GNFC', sector: 'Fertilizers', marketCap: 15000 },
+      { symbol: 'CHAMBALFER', sector: 'Fertilizers', marketCap: 20000 },
+
+      // Real Estate
+      { symbol: 'DLF', sector: 'Real Estate', marketCap: 180000 },
+      { symbol: 'GODREJPROP', sector: 'Real Estate', marketCap: 70000 },
+      { symbol: 'OBEROIRLTY', sector: 'Real Estate', marketCap: 60000 },
+      { symbol: 'PRESTIGE', sector: 'Real Estate', marketCap: 55000 },
+      { symbol: 'LODHA', sector: 'Real Estate', marketCap: 90000 },
+      { symbol: 'PHOENIXLTD', sector: 'Real Estate', marketCap: 45000 },
+      { symbol: 'BRIGADE', sector: 'Real Estate', marketCap: 25000 },
+
+      // Adani Group
+      { symbol: 'ADANIENT', sector: 'Infrastructure', marketCap: 320000 },
+      { symbol: 'ADANIPOWER', sector: 'Power', marketCap: 180000 },
+
+      // Media & Entertainment
+      { symbol: 'ZEEL', sector: 'Media', marketCap: 20000 },
+      { symbol: 'PVR', sector: 'Media', marketCap: 18000 },
+
+      // Logistics & Transport
+      { symbol: 'CONCOR', sector: 'Logistics', marketCap: 50000 },
+      { symbol: 'DELHIVERY', sector: 'Logistics', marketCap: 35000 },
+
+      // Miscellaneous
+      { symbol: 'INDIGO', sector: 'Aviation', marketCap: 120000 },
+      { symbol: 'IRCTC', sector: 'Travel', marketCap: 65000 },
+      { symbol: 'ZOMATO', sector: 'Internet', marketCap: 180000 },
+      { symbol: 'NYKAA', sector: 'Internet', marketCap: 50000 },
+      { symbol: 'PAYTM', sector: 'Internet', marketCap: 45000 },
+      { symbol: 'POLICYBZR', sector: 'Internet', marketCap: 55000 },
+      { symbol: 'JIOFIN', sector: 'Finance', marketCap: 160000 },
+      { symbol: 'TATAELXSI', sector: 'IT', marketCap: 40000 },
+      { symbol: 'TATACOMM', sector: 'Telecom', marketCap: 45000 },
+      { symbol: 'INDUSTOWER', sector: 'Telecom', marketCap: 95000 },
+      { symbol: 'HINDCOPPER', sector: 'Metals', marketCap: 30000 },
+      { symbol: 'ABCAPITAL', sector: 'Finance', marketCap: 35000 },
+      { symbol: 'GMRINFRA', sector: 'Infrastructure', marketCap: 45000 },
+      { symbol: 'LAURUSLABS', sector: 'Pharma', marketCap: 25000 },
+      { symbol: 'ESCORTS', sector: 'Automobile', marketCap: 35000 },
+      { symbol: 'SYNGENE', sector: 'Pharma', marketCap: 25000 },
+      { symbol: 'AAVAS', sector: 'Finance', marketCap: 15000 },
+      { symbol: 'CANFINHOME', sector: 'Finance', marketCap: 12000 },
+      { symbol: 'OFSS', sector: 'IT', marketCap: 65000 },
+      { symbol: 'NAUKRI', sector: 'Internet', marketCap: 85000 },
+      { symbol: 'HONAUT', sector: 'Capital Goods', marketCap: 45000 },
+      { symbol: 'ASTRAL', sector: 'Chemicals', marketCap: 50000 },
+      { symbol: 'SUMICHEM', sector: 'Chemicals', marketCap: 20000 },
+      { symbol: 'SONACOMS', sector: 'Auto Ancillary', marketCap: 25000 },
+      { symbol: 'EXIDEIND', sector: 'Auto Ancillary', marketCap: 30000 },
+      { symbol: 'AMARAJABAT', sector: 'Auto Ancillary', marketCap: 20000 },
     ];
 
     let addedCount = 0;

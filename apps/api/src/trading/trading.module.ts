@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
 import { TradingService } from './trading.service';
 import { TradingController } from './trading.controller';
 import { PaperTradingController } from './paper-trading.controller';
@@ -6,16 +6,19 @@ import { PaperTradingService } from './paper-trading.service';
 import { ExecutionFlowService } from './execution-flow.service';
 import { LiveTradingController } from './live-trading.controller';
 import { KotakNeoAuthController } from './kotak-neo-auth.controller';
+import { KiteConnectAuthController } from './kite-connect-auth.controller';
 import { KotakSessionStore } from './kotak-neo-session.store';
 import { RiskModule } from '../risk/risk.module';
 import { KotakNeoProvider } from './brokers/kotak-neo.provider';
 import { ConfigModule } from '../config/config.module';
 import { AuditModule } from '../audit/audit.module';
 import { KillSwitchModule } from './kill-switch/kill-switch.module';
+import { MarketFeedModule } from '../market-feed/market-feed.module';
+import { AutoTradeConfigController } from './auto-trade-config.controller';
 
 @Module({
-  imports: [RiskModule, ConfigModule, AuditModule, KillSwitchModule],
-  controllers: [TradingController, PaperTradingController, LiveTradingController, KotakNeoAuthController],
+  imports: [RiskModule, ConfigModule, AuditModule, KillSwitchModule, forwardRef(() => MarketFeedModule)],
+  controllers: [TradingController, PaperTradingController, LiveTradingController, KotakNeoAuthController, AutoTradeConfigController, KiteConnectAuthController],
   providers: [TradingService, PaperTradingService, ExecutionFlowService, KotakNeoProvider, KotakSessionStore],
   exports: [TradingService, PaperTradingService, ExecutionFlowService, KotakNeoProvider, KotakSessionStore],
 })

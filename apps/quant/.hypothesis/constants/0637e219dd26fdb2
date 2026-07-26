@@ -1,0 +1,4 @@
+# file: /Users/anshulkumar/Desktop/twelve/apps/quant/trade_coach/live_analysis.py
+# hypothesis_version: 6.141.1
+
+[0.0, 0.5, 2.0, 80.0, 100, 'average_slippage', 'avg_pnl', 'combined', 'favorable_count', 'live', 'total_pnl', 'total_slippage', 'unfavorable_count', 'win_rate']

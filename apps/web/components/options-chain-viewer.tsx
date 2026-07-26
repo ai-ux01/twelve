@@ -28,6 +28,7 @@ import {
 } from '@/components/ui/table';
 import { Loader2, RefreshCw, AlertTriangle, ShoppingCart } from 'lucide-react';
 import { apiClient, OptionsChainResponse } from '@/lib/api-client';
+import { DEFAULT_USER_ID } from '@/lib/constants';
 import { OptionsTradeConfirmationDialog } from './options-trade-confirmation-dialog';
 
 export interface OptionsChainViewerProps {
@@ -78,7 +79,7 @@ export function OptionsChainViewer({
   initialData,
   onDataFetch,
   onError,
-  userId = 'default-user', // Default user ID for paper trading
+  userId = DEFAULT_USER_ID,
 }: OptionsChainViewerProps) {
   const [chainData, setChainData] = useState<OptionsChainResponse | null>(initialData || null);
   const [isFetching, setIsFetching] = useState(false);

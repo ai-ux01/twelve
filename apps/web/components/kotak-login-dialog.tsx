@@ -33,12 +33,12 @@ export function KotakLoginDialog({ open, onOpenChange, onSuccess }: KotakLoginDi
   const [error, setError] = useState<string | null>(null);
 
   // Hardcoded credentials
-  const [mobileNumber] = useState('+91XXXX');
-  const [ucc] = useState('XXXXXxxx');
+  const [mobileNumber] = useState('+917079216930');
+  const [ucc] = useState('XWYPM');
   const [totp, setTotp] = useState('');
 
   // Step 2 fields
-  const [mpin] = useState('12323223456');
+  const [mpin] = useState('123456');
 
   // Step 1 response
   const [greetingName, setGreetingName] = useState<string | null>(null);

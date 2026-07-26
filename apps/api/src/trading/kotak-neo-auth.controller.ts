@@ -6,6 +6,7 @@ import { Response } from 'express';
 import { SkipThrottle } from '@nestjs/throttler';
 import { ConfigService } from '../config/config.service';
 import { KotakSessionStore } from './kotak-neo-session.store';
+import { MarketDataManager } from '../market-feed/market-data-manager.service';
 import axios from 'axios';
 
 /**
@@ -37,6 +38,7 @@ export class KotakNeoAuthController {
   constructor(
     private readonly configService: ConfigService,
     private readonly sessionStore: KotakSessionStore,
+    private readonly marketDataManager: MarketDataManager,
   ) {}
 
   // ─────────────────────────────────────────────────────────────────────────
@@ -172,6 +174,11 @@ export class KotakNeoAuthController {
         this.viewSid = null;
 
         this.logger.log(`MPIN validated. Session: ${sessionId}, baseUrl: ${data.baseUrl}`);
+
+        // Auto-connect market feed with the new session
+        this.marketDataManager.connect().catch((err) => {
+          this.logger.warn(`Market feed auto-connect failed: ${err.message}`);
+        });
 
         return {
           sessionId,

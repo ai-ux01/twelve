@@ -23,6 +23,7 @@ import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { CheckCircle, XCircle, Loader2, ShoppingCart } from 'lucide-react';
 import { apiClient } from '@/lib/api-client';
+import { DEFAULT_USER_ID } from '@/lib/constants';
 
 export interface PaperTradeParams {
   signalType: 'BUY CE' | 'BUY PE' | 'HOLD';
@@ -48,7 +49,7 @@ const LOT_SIZES: Record<string, number> = {
   BANKNIFTY: 25,
 };
 
-export function ActionButtons({ tradeParams, userId = 'default' }: ActionButtonsProps) {
+export function ActionButtons({ tradeParams, userId = DEFAULT_USER_ID }: ActionButtonsProps) {
   const router = useRouter();
   const [isCreating, setIsCreating] = useState(false);
   const [success, setSuccess] = useState(false);

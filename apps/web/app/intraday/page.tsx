@@ -1,6 +1,7 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import dynamic from 'next/dynamic';
 import { Card, CardContent } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { AlertCircle, TrendingUp } from 'lucide-react';
@@ -9,6 +10,10 @@ import { IntradayDataPanel } from '@/components/intraday-data-panel';
 import { IntradayRecommendationCard } from '@/components/intraday-recommendation-card';
 import { DataFreshnessIndicator } from '@/components/data-freshness-indicator';
 import type { IntradayAnalysisResponse } from '@/lib/api-client';
+import type { OHLCVData } from '@/lib/api-client';
+import { DEFAULT_USER_ID } from '@/lib/constants';
+
+const IntradayChart = dynamic(() => import('@/components/charts/IntradayChart'), { ssr: false });
 
 /**
  * Intraday Analysis Page
@@ -28,7 +33,30 @@ export default function IntradayAnalysisPage() {
   const [analysisResult, setAnalysisResult] = useState<IntradayAnalysisResponse | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
-  const [userId] = useState('user-123'); // TODO: Get from auth context
+  const [userId] = useState(DEFAULT_USER_ID);
+  const [ohlcvData, setOhlcvData] = useState<OHLCVData[]>([]);
+
+  // Fetch OHLCV data when analysis completes
+  useEffect(() => {
+    if (!analysisResult) {
+      setOhlcvData([]);
+      return;
+    }
+    const fetchOhlcv = async () => {
+      try {
+        const res = await fetch(
+          `http://localhost:8000/api/market-data/ohlcv?symbol=${analysisResult.symbol}&timeframe=${analysisResult.interval || '5m'}&limit=100`
+        );
+        if (res.ok) {
+          const data = await res.json();
+          setOhlcvData(Array.isArray(data) ? data : data.data ?? []);
+        }
+      } catch {
+        // Chart will show empty state
+      }
+    };
+    fetchOhlcv();
+  }, [analysisResult]);
 
   const handleAnalyzeComplete = (result: IntradayAnalysisResponse) => {
     setAnalysisResult(result);
@@ -91,10 +119,12 @@ export default function IntradayAnalysisPage() {
       {analysisResult && (
         <div className="space-y-6">
           {/* Data Freshness Indicator */}
-          <DataFreshnessIndicator
-            dataFreshness={analysisResult.dataFreshness}
-            onRefreshClick={handleRefreshClick}
-          />
+          {analysisResult.dataFreshness && (
+            <DataFreshnessIndicator
+              dataFreshness={analysisResult.dataFreshness}
+              onRefreshClick={handleRefreshClick}
+            />
+          )}
 
           {/* Two Column Layout: Recommendation + Technical Data */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -109,6 +139,21 @@ export default function IntradayAnalysisPage() {
             {/* Right Column: Technical Data Panel */}
             <IntradayDataPanel data={analysisResult} />
           </div>
+
+          {/* Intraday Chart */}
+          {ohlcvData.length > 0 && (
+            <Card>
+              <CardContent className="pt-6">
+                <IntradayChart
+                  symbol={analysisResult.symbol}
+                  data={ohlcvData}
+                  entry={analysisResult.recommendation.entry}
+                  stopLoss={analysisResult.recommendation.stopLoss}
+                  target={analysisResult.recommendation.target}
+                />
+              </CardContent>
+            </Card>
+          )}
         </div>
       )}
 

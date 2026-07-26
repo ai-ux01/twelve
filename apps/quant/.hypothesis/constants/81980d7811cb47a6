@@ -1,0 +1,4 @@
+# file: /Users/anshulkumar/Desktop/twelve/apps/quant/market_data/mongo_provider.py
+# hypothesis_version: 6.141.1
+
+[100, 5000, '$gte', '$lte', '$regex', '/', '?', 'MONGODB_URI', '_id', 'bot-ai', 'candles', 'close', 'day', 'high', 'low', 'open', 'ping', 'price', 'symbol', 'time', 'timeframe', 'timestamp', 'tradingsymbol', 'volume']

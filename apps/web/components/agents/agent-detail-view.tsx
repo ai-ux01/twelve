@@ -22,7 +22,9 @@ export interface AgentDetailViewProps {
   decisions: AgentDecision[];
   isLoading: boolean;
   error: string | null;
+  transitionError?: string | null;
   onStatusChange: (agentId: string, newStatus: string, reason: string) => void;
+  onDelete?: (agentId: string) => void;
 }
 
 export function AgentDetailView({
@@ -32,7 +34,9 @@ export function AgentDetailView({
   decisions,
   isLoading,
   error,
+  transitionError,
   onStatusChange,
+  onDelete,
 }: AgentDetailViewProps) {
   if (isLoading) {
     return (
@@ -73,15 +77,33 @@ export function AgentDetailView({
             {AGENT_TYPE_LABELS[agent.agent_type]} Agent
           </p>
         </div>
-        <span
-          className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-medium ${STATUS_COLORS[agent.status]}`}
-        >
-          {agent.status.replace('_', ' ')}
-        </span>
+        <div className="flex items-center gap-2">
+          <span
+            className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-medium ${STATUS_COLORS[agent.status]}`}
+          >
+            {agent.status.replace('_', ' ')}
+          </span>
+          {onDelete && (
+            <button
+              onClick={() => onDelete(agent.id)}
+              className="rounded-md border border-red-200 px-3 py-1.5 text-xs font-medium text-red-600 hover:bg-red-50 transition-colors"
+              title="Delete agent"
+            >
+              Delete
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Lifecycle Controls */}
       <LifecycleControls agent={agent} onStatusChange={onStatusChange} />
+
+      {/* Transition Error */}
+      {transitionError && (
+        <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3">
+          <p className="text-sm text-red-800">{transitionError}</p>
+        </div>
+      )}
 
       {/* Configuration */}
       <div className="rounded-lg border p-4">

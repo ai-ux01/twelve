@@ -1,7 +1,11 @@
-import { IsOptional, IsEnum, IsNumber, Min, IsArray } from 'class-validator';
+import { IsOptional, IsEnum, IsNumber, Min, IsArray, IsString } from 'class-validator';
 import { Type, Transform } from 'class-transformer';
 
 export class PaperTradeFiltersDto {
+  @IsOptional()
+  @IsString()
+  userId?: string;
+
   @IsOptional()
   @Transform(({ value }) => (typeof value === 'string' ? value.split(',') : value))
   @IsArray()

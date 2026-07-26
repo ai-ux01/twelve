@@ -12,6 +12,7 @@ import {
   UsePipes,
   ValidationPipe,
 } from '@nestjs/common';
+import { SkipThrottle } from '@nestjs/throttler';
 import { PaperTradingService } from './paper-trading.service';
 import { CreatePaperTradeDto } from './dto/create-paper-trade.dto';
 import { ClosePaperTradeDto } from './dto/close-paper-trade.dto';
@@ -23,6 +24,7 @@ import { PaperTradeFiltersDto } from './dto/paper-trade-filters.dto';
  * Provides endpoints for creating, listing, updating, closing, and cancelling paper trades.
  * Also proxies metrics requests to the quant engine performance calculator.
  */
+@SkipThrottle()
 @Controller('paper-trades')
 @UsePipes(new ValidationPipe({ transform: true, whitelist: true }))
 export class PaperTradingController {

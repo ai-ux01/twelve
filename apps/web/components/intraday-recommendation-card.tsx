@@ -19,6 +19,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { Loader2, TrendingUp, AlertCircle } from 'lucide-react';
+import { DEFAULT_USER_ID } from '@/lib/constants';
 
 export interface IntradayRecommendationCardProps {
   recommendation: {
@@ -66,7 +67,7 @@ export interface IntradayRecommendationCardProps {
  */
 export function IntradayRecommendationCard({
   recommendation,
-  userId = 'user-123',
+  userId = DEFAULT_USER_ID,
   onPaperTradeSuccess,
   onPaperTradeError,
 }: IntradayRecommendationCardProps) {
@@ -234,7 +235,7 @@ export function IntradayRecommendationCard({
         <div>
           <div className="flex items-center justify-between text-sm mb-2">
             <span className="font-medium">Confidence Score</span>
-            <span className="text-muted-foreground">{confidence.toFixed(1)}%</span>
+            <span className="text-muted-foreground">{confidence?.toFixed(1)}%</span>
           </div>
           <div className="w-full h-3 bg-gray-200 rounded-full overflow-hidden">
             <div
@@ -255,10 +256,10 @@ export function IntradayRecommendationCard({
             <div className="flex items-center justify-between border-l-4 border-green-500 pl-3">
               <div>
                 <p className="text-sm text-muted-foreground">Target</p>
-                <p className="text-lg font-bold text-green-600">₹{target.toFixed(2)}</p>
+                <p className="text-lg font-bold text-green-600">₹{target?.toFixed(2)}</p>
               </div>
               <Badge className="bg-green-100 text-green-800">
-                +{targetGain.toFixed(1)}%
+                +{targetGain?.toFixed(1)}%
               </Badge>
             </div>
 
@@ -266,7 +267,7 @@ export function IntradayRecommendationCard({
             <div className="flex items-center justify-between border-l-4 border-blue-500 pl-3">
               <div>
                 <p className="text-sm text-muted-foreground">Entry</p>
-                <p className="text-lg font-bold">₹{entry.toFixed(2)}</p>
+                <p className="text-lg font-bold">₹{entry?.toFixed(2)}</p>
               </div>
             </div>
 
@@ -274,10 +275,10 @@ export function IntradayRecommendationCard({
             <div className="flex items-center justify-between border-l-4 border-red-500 pl-3">
               <div>
                 <p className="text-sm text-muted-foreground">Stop Loss</p>
-                <p className="text-lg font-bold text-red-600">₹{stopLoss.toFixed(2)}</p>
+                <p className="text-lg font-bold text-red-600">₹{stopLoss?.toFixed(2)}</p>
               </div>
               <Badge className="bg-red-100 text-red-800">
-                -{stopLossRisk.toFixed(1)}%
+                -{stopLossRisk?.toFixed(1)}%
               </Badge>
             </div>
           </div>
@@ -288,7 +289,7 @@ export function IntradayRecommendationCard({
           <div className="flex items-center justify-between bg-blue-50 dark:bg-blue-950 p-4 rounded-lg">
             <div>
               <p className="text-sm text-muted-foreground">Risk/Reward Ratio</p>
-              <p className="text-2xl font-bold">{riskReward.toFixed(2)}:1</p>
+              <p className="text-2xl font-bold">{riskReward?.toFixed(2)}:1</p>
             </div>
             {riskReward >= 2 && <Badge className="bg-green-500">Favorable</Badge>}
           </div>
@@ -302,28 +303,28 @@ export function IntradayRecommendationCard({
           <div className="grid grid-cols-2 gap-3 text-sm">
             <div>
               <p className="text-muted-foreground">Current Price</p>
-              <p className="font-medium">₹{currentPrice.toFixed(2)}</p>
+              <p className="font-medium">₹{currentPrice?.toFixed(2) ?? 'N/A'}</p>
             </div>
             <div>
               <p className="text-muted-foreground">VWAP</p>
-              <p className="font-medium">₹{vwap.toFixed(2)}</p>
+              <p className="font-medium">₹{vwap?.toFixed(2) ?? 'N/A'}</p>
             </div>
             <div>
               <p className="text-muted-foreground">EMA 5</p>
-              <p className="font-medium">₹{ema5.toFixed(2)}</p>
+              <p className="font-medium">₹{ema5?.toFixed(2) ?? 'N/A'}</p>
             </div>
             <div>
               <p className="text-muted-foreground">EMA 15</p>
-              <p className="font-medium">₹{ema15.toFixed(2)}</p>
+              <p className="font-medium">₹{ema15?.toFixed(2) ?? 'N/A'}</p>
             </div>
             <div>
               <p className="text-muted-foreground">RSI</p>
-              <p className="font-medium">{rsi.toFixed(2)}</p>
+              <p className="font-medium">{rsi?.toFixed(2) ?? 'N/A'}</p>
             </div>
             <div>
               <p className="text-muted-foreground">MACD Histogram</p>
-              <p className={`font-medium ${macd.histogram >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                {macd.histogram.toFixed(2)}
+              <p className={`font-medium ${(macd?.histogram ?? 0) >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                {macd?.histogram?.toFixed(2) ?? 'N/A'}
               </p>
             </div>
           </div>

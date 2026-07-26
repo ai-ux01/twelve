@@ -18,7 +18,7 @@ export class ScanSwingUniverseDto {
   @IsOptional()
   @IsNumber()
   @Min(1)
-  @Max(100)
+  @Max(200)
   maxResults?: number;
 
   @IsOptional()

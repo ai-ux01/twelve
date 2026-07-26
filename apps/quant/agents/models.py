@@ -121,10 +121,10 @@ class MemoryType(str, Enum):
 
 VALID_TRANSITIONS: Dict[AgentStatus, List[AgentStatus]] = {
     AgentStatus.DRAFT: [AgentStatus.TESTING, AgentStatus.DISABLED],
-    AgentStatus.TESTING: [AgentStatus.PAPER, AgentStatus.DISABLED],
-    AgentStatus.PAPER: [AgentStatus.SHADOW, AgentStatus.DISABLED],
-    AgentStatus.SHADOW: [AgentStatus.CONTROLLED_LIVE, AgentStatus.DISABLED],
-    AgentStatus.CONTROLLED_LIVE: [AgentStatus.PAUSED, AgentStatus.DISABLED],
+    AgentStatus.TESTING: [AgentStatus.PAPER, AgentStatus.DRAFT, AgentStatus.DISABLED],
+    AgentStatus.PAPER: [AgentStatus.SHADOW, AgentStatus.TESTING, AgentStatus.DISABLED],
+    AgentStatus.SHADOW: [AgentStatus.CONTROLLED_LIVE, AgentStatus.PAPER, AgentStatus.DISABLED],
+    AgentStatus.CONTROLLED_LIVE: [AgentStatus.PAUSED, AgentStatus.SHADOW, AgentStatus.DISABLED],
     AgentStatus.PAUSED: [AgentStatus.CONTROLLED_LIVE, AgentStatus.DISABLED],
     AgentStatus.DISABLED: [],  # Terminal state
 }

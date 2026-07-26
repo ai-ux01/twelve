@@ -157,6 +157,22 @@ class TradeRepository:
                     return trade
         return None
 
+    def get_trades_by_strategy(self, user_id: str, strategy: str) -> List[TradeRecord]:
+        """
+        Retrieve trades for a user filtered by strategy field.
+
+        Args:
+            user_id: The user identifier.
+            strategy: The strategy value to filter by (e.g., "paper_trade", "live_stock", "live_options").
+
+        Returns:
+            List of TradeRecords matching the given strategy (empty list if none).
+
+        Requirements: 6.2
+        """
+        all_trades = self.get_trades(user_id)
+        return [trade for trade in all_trades if trade.strategy == strategy]
+
     def clear_user_trades(self, user_id: str) -> None:
         """
         Remove all trades for a user.

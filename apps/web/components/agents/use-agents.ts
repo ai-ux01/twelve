@@ -181,8 +181,10 @@ export function useAuditTrail(): UseAuditTrailResult {
 interface UseAgentMutationsResult {
   createAgent: (request: CreateAgentRequest) => Promise<Agent | null>;
   updateAgent: (agentId: string, request: UpdateAgentRequest) => Promise<Agent | null>;
+  deleteAgent: (agentId: string) => Promise<boolean>;
   isCreating: boolean;
   isUpdating: boolean;
+  isDeleting: boolean;
   createError: string | null;
   updateError: string | null;
 }
@@ -190,6 +192,7 @@ interface UseAgentMutationsResult {
 export function useAgentMutations(): UseAgentMutationsResult {
   const [isCreating, setIsCreating] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
   const [createError, setCreateError] = useState<string | null>(null);
   const [updateError, setUpdateError] = useState<string | null>(null);
 
@@ -228,7 +231,21 @@ export function useAgentMutations(): UseAgentMutationsResult {
         });
         if (!response.ok) {
           const errorData = await response.json().catch(() => null);
-          throw new Error(errorData?.detail || `Failed to update agent: ${response.status}`);
+          // Handle structured error from 409 Conflict (invalid transition)
+          const detail = errorData?.detail;
+          let message: string;
+          if (typeof detail === 'object' && detail !== null) {
+            if (detail.allowed_transitions) {
+              message = `Invalid transition: ${detail.current_status} → ${request.status}. Allowed: ${detail.allowed_transitions.join(', ')}`;
+            } else {
+              message = detail.detail || JSON.stringify(detail);
+            }
+          } else if (typeof detail === 'string') {
+            message = detail;
+          } else {
+            message = `Failed to update agent: ${response.status}`;
+          }
+          throw new Error(message);
         }
         const data: Agent = await response.json();
         return data;
@@ -242,5 +259,23 @@ export function useAgentMutations(): UseAgentMutationsResult {
     []
   );
 
-  return { createAgent, updateAgent, isCreating, isUpdating, createError, updateError };
+  const deleteAgent = useCallback(async (agentId: string): Promise<boolean> => {
+    setIsDeleting(true);
+    try {
+      const response = await fetch(`${API_BASE}/${agentId}`, {
+        method: 'DELETE',
+      });
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => null);
+        throw new Error(errorData?.detail || `Failed to delete agent: ${response.status}`);
+      }
+      return true;
+    } catch (err) {
+      return false;
+    } finally {
+      setIsDeleting(false);
+    }
+  }, []);
+
+  return { createAgent, updateAgent, deleteAgent, isCreating, isUpdating, isDeleting, createError, updateError };
 }

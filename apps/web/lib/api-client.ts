@@ -771,6 +771,35 @@ class ApiClient {
 }
 
 // ============================================================================
+// Trendline Types
+// ============================================================================
+
+export interface TrendlineLine {
+  slope: number;
+  intercept: number;
+  r_squared: number;
+  start_point: number;
+  end_point: number;
+}
+
+export interface SwingPoint {
+  index: number;
+  price: number;
+  type: 'HIGH' | 'LOW';
+}
+
+export interface TrendlineData {
+  support_line: TrendlineLine | null;
+  resistance_line: TrendlineLine | null;
+  swing_points: SwingPoint[];
+  breakout_status: 'NONE' | 'BREAKOUT' | 'BREAKDOWN' | 'CONFIRMED';
+  direction: 'UPTREND' | 'DOWNTREND' | 'SIDEWAYS';
+  support_status: 'ACTIVE' | 'BROKEN' | 'RETESTING';
+  resistance_status: 'ACTIVE' | 'BROKEN' | 'RETESTING';
+  confidence: number;
+}
+
+// ============================================================================
 // Swing Trading Types
 // ============================================================================
 
@@ -799,6 +828,7 @@ export interface SwingCandidate {
     sectorScore: number;
     riskRewardScore: number;
   };
+  trendline?: TrendlineData;
 }
 
 export interface SwingScanResponse {

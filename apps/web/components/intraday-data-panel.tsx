@@ -11,8 +11,10 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { AlertCircle } from 'lucide-react';
+import { TrendlineData } from '@/lib/api-client';
 
 export interface IntradayDataPanelProps {
+  trendline?: TrendlineData;
   data: {
     symbol: string;
     interval: string;
@@ -63,12 +65,12 @@ export interface IntradayDataPanelProps {
  * 
  * Highlights stale data with warning color if isStale = true
  */
-export function IntradayDataPanel({ data }: IntradayDataPanelProps) {
+export function IntradayDataPanel({ data, trendline }: IntradayDataPanelProps) {
   const { symbol, interval, dataFreshness, technicalAnalysis, currentPrice, priceChange, priceChangePercent } = data;
 
-  const isStale = dataFreshness.isStale;
-  const priceColor = priceChange >= 0 ? 'text-green-600' : 'text-red-600';
-  const priceSymbol = priceChange >= 0 ? '+' : '';
+  const isStale = dataFreshness?.isStale ?? false;
+  const priceColor = (priceChange ?? 0) >= 0 ? 'text-green-600' : 'text-red-600';
+  const priceSymbol = (priceChange ?? 0) >= 0 ? '+' : '';
 
   return (
     <Card className={isStale ? 'border-yellow-500 border-2' : ''}>
@@ -101,16 +103,16 @@ export function IntradayDataPanel({ data }: IntradayDataPanelProps) {
           <div>
             <h3 className="text-lg font-semibold mb-3">Price Action</h3>
             <div className="grid grid-cols-2 gap-4">
-              <DataField label="Current Price" value={`₹${currentPrice.toFixed(2)}`} />
+              <DataField label="Current Price" value={`₹${currentPrice?.toFixed(2) ?? 'N/A'}`} />
               <DataField
                 label="Change"
-                value={`${priceSymbol}₹${priceChange.toFixed(2)} (${priceSymbol}${priceChangePercent.toFixed(2)}%)`}
+                value={`${priceSymbol}₹${priceChange?.toFixed(2)} (${priceSymbol}${priceChangePercent?.toFixed(2)}%)`}
                 valueClassName={priceColor}
               />
-              <DataField label="VWAP" value={`₹${technicalAnalysis.vwap.toFixed(2)}`} />
-              <DataField label="EMA 9" value={`₹${technicalAnalysis.ema_9.toFixed(2)}`} />
-              <DataField label="EMA 21" value={`₹${technicalAnalysis.ema_21.toFixed(2)}`} />
-              <DataField label="EMA 50" value={`₹${technicalAnalysis.ema_50.toFixed(2)}`} />
+              <DataField label="VWAP" value={`₹${technicalAnalysis?.vwap?.toFixed(2)}`} />
+              <DataField label="EMA 9" value={`₹${technicalAnalysis?.ema_9?.toFixed(2)}`} />
+              <DataField label="EMA 21" value={`₹${technicalAnalysis?.ema_21?.toFixed(2)}`} />
+              <DataField label="EMA 50" value={`₹${technicalAnalysis?.ema_50?.toFixed(2)}`} />
             </div>
           </div>
 
@@ -122,16 +124,16 @@ export function IntradayDataPanel({ data }: IntradayDataPanelProps) {
             <div className="grid grid-cols-2 gap-4">
               <DataField
                 label="RSI"
-                value={technicalAnalysis.rsi.toFixed(2)}
-                badge={getRsiBadge(technicalAnalysis.rsi)}
+                value={technicalAnalysis?.rsi?.toFixed(2)}
+                badge={getRsiBadge(technicalAnalysis?.rsi ?? 50)}
               />
               <DataField
                 label="MACD Histogram"
-                value={technicalAnalysis.macd.histogram.toFixed(2)}
-                valueClassName={technicalAnalysis.macd.histogram >= 0 ? 'text-green-600' : 'text-red-600'}
+                value={technicalAnalysis?.macd?.histogram?.toFixed(2)}
+                valueClassName={(technicalAnalysis?.macd?.histogram ?? 0) >= 0 ? 'text-green-600' : 'text-red-600'}
               />
-              <DataField label="MACD Value" value={technicalAnalysis.macd.value.toFixed(2)} />
-              <DataField label="MACD Signal" value={technicalAnalysis.macd.signal.toFixed(2)} />
+              <DataField label="MACD Value" value={technicalAnalysis?.macd?.value?.toFixed(2)} />
+              <DataField label="MACD Signal" value={technicalAnalysis?.macd?.signal?.toFixed(2)} />
             </div>
           </div>
 
@@ -141,13 +143,13 @@ export function IntradayDataPanel({ data }: IntradayDataPanelProps) {
           <div>
             <h3 className="text-lg font-semibold mb-3">Volume</h3>
             <div className="grid grid-cols-2 gap-4">
-              <DataField label="Current Volume" value={technicalAnalysis.volume.toLocaleString()} />
+              <DataField label="Current Volume" value={technicalAnalysis?.volume?.toLocaleString() ?? "0"} />
               <DataField
                 label="Relative Volume"
-                value={`${technicalAnalysis.relativeVolume.toFixed(2)}x`}
-                badge={getVolumeBadge(technicalAnalysis.relativeVolume)}
+                value={`${technicalAnalysis?.relativeVolume?.toFixed(2)}x`}
+                badge={getVolumeBadge(technicalAnalysis?.relativeVolume ?? 1)}
               />
-              <DataField label="ATR" value={`₹${technicalAnalysis.atr.toFixed(2)}`} />
+              <DataField label="ATR" value={`₹${technicalAnalysis?.atr?.toFixed(2)}`} />
             </div>
           </div>
 
@@ -157,9 +159,9 @@ export function IntradayDataPanel({ data }: IntradayDataPanelProps) {
           <div>
             <h3 className="text-lg font-semibold mb-3">Bollinger Bands</h3>
             <div className="grid grid-cols-3 gap-4">
-              <DataField label="Upper Band" value={`₹${technicalAnalysis.bollingerBands.upper.toFixed(2)}`} />
-              <DataField label="Middle Band" value={`₹${technicalAnalysis.bollingerBands.middle.toFixed(2)}`} />
-              <DataField label="Lower Band" value={`₹${technicalAnalysis.bollingerBands.lower.toFixed(2)}`} />
+              <DataField label="Upper Band" value={`₹${technicalAnalysis?.bollingerBands?.upper?.toFixed(2)}`} />
+              <DataField label="Middle Band" value={`₹${technicalAnalysis?.bollingerBands?.middle?.toFixed(2)}`} />
+              <DataField label="Lower Band" value={`₹${technicalAnalysis?.bollingerBands?.lower?.toFixed(2)}`} />
             </div>
           </div>
 
@@ -172,10 +174,10 @@ export function IntradayDataPanel({ data }: IntradayDataPanelProps) {
               <div>
                 <p className="text-sm text-muted-foreground mb-2">Support Levels</p>
                 <div className="space-y-1">
-                  {technicalAnalysis.supportLevels.length > 0 ? (
-                    technicalAnalysis.supportLevels.slice(0, 3).map((level, i) => (
+                  {technicalAnalysis?.supportLevels.length > 0 ? (
+                    technicalAnalysis?.supportLevels.slice(0, 3).map((level, i) => (
                       <div key={i} className="text-sm font-medium text-green-600">
-                        ₹{level.toFixed(2)}
+                        ₹{level?.toFixed(2)}
                       </div>
                     ))
                   ) : (
@@ -186,10 +188,10 @@ export function IntradayDataPanel({ data }: IntradayDataPanelProps) {
               <div>
                 <p className="text-sm text-muted-foreground mb-2">Resistance Levels</p>
                 <div className="space-y-1">
-                  {technicalAnalysis.resistanceLevels.length > 0 ? (
-                    technicalAnalysis.resistanceLevels.slice(0, 3).map((level, i) => (
+                  {technicalAnalysis?.resistanceLevels.length > 0 ? (
+                    technicalAnalysis?.resistanceLevels.slice(0, 3).map((level, i) => (
                       <div key={i} className="text-sm font-medium text-red-600">
-                        ₹{level.toFixed(2)}
+                        ₹{level?.toFixed(2)}
                       </div>
                     ))
                   ) : (
@@ -198,6 +200,39 @@ export function IntradayDataPanel({ data }: IntradayDataPanelProps) {
                 </div>
               </div>
             </div>
+          </div>
+
+          <Separator />
+
+          {/* Trendlines Section */}
+          <div>
+            <h3 className="text-lg font-semibold mb-3">Trendlines</h3>
+            {trendline ? (
+              <div className="grid grid-cols-2 gap-4">
+                <DataField label="Direction" value={trendline.direction} />
+                <DataField label="Support Status" value={trendline.support_status} />
+                <DataField label="Resistance Status" value={trendline.resistance_status} />
+                <div>
+                  <p className="text-sm text-muted-foreground">Breakout Status</p>
+                  <div className="flex items-center gap-2">
+                    <p className="text-lg font-medium">{trendline.breakout_status}</p>
+                    {(trendline.breakout_status === 'BREAKOUT' || trendline.breakout_status === 'CONFIRMED') && (
+                      <Badge className="text-xs bg-green-600 text-white">
+                        {trendline.breakout_status}
+                      </Badge>
+                    )}
+                    {trendline.breakout_status === 'BREAKDOWN' && (
+                      <Badge className="text-xs bg-red-600 text-white">
+                        {trendline.breakout_status}
+                      </Badge>
+                    )}
+                  </div>
+                </div>
+                <DataField label="Confidence" value={`${(trendline.confidence * 100).toFixed(1)}%`} />
+              </div>
+            ) : (
+              <p className="text-sm text-muted-foreground">No trendline data</p>
+            )}
           </div>
         </div>
       </CardContent>

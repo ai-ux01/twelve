@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { EventEmitterModule } from '@nestjs/event-emitter';
 import { DatabaseModule } from '../database';
@@ -16,6 +16,7 @@ import { InstrumentMasterSync } from './instrument-master-sync.service';
 import { ATMEngine } from './atm-engine.service';
 import { WatchlistService } from './watchlist.service';
 import { MarketFeedGateway } from './market-feed.gateway';
+import { CandleAggregatorService } from './candle-aggregator.service';
 import { MARKET_DATA_PROVIDER } from './interfaces';
 
 @Module({
@@ -23,7 +24,7 @@ import { MARKET_DATA_PROVIDER } from './interfaces';
     ConfigModule,
     DatabaseModule,
     EventEmitterModule.forRoot(),
-    TradingModule,
+    forwardRef(() => TradingModule),
   ],
   providers: [
     MarketFeedConfig,
@@ -48,7 +49,8 @@ import { MARKET_DATA_PROVIDER } from './interfaces';
     ATMEngine,
     WatchlistService,
     MarketFeedGateway,
+    CandleAggregatorService,
   ],
-  exports: [MarketDataManager, InstrumentMasterSync, WatchlistService],
+  exports: [MarketDataManager, InstrumentMasterSync, WatchlistService, CandleAggregatorService],
 })
 export class MarketFeedModule {}

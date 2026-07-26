@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef, useCallback } from 'react';
+import dynamic from 'next/dynamic';
 import { io, Socket } from 'socket.io-client';
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -12,6 +13,8 @@ import {
   TableRow,
   TableCell,
 } from '@/components/ui/table';
+
+const MarketFeedChart = dynamic(() => import('@/components/charts/MarketFeedChart'), { ssr: false });
 
 // --- Types ---
 
@@ -109,6 +112,8 @@ export default function MarketFeedPage() {
 
     socket.on('connect', () => {
       setStatus('CONNECTED');
+      // Join the 'all-ticks' room to receive ticks from all subscribed instruments
+      socket.emit('subscribe', { token: 'all', type: 'all' });
     });
 
     socket.on('disconnect', () => {
@@ -213,6 +218,21 @@ export default function MarketFeedPage() {
           <Badge variant="outline">{ticksArray.length} subscriptions</Badge>
         </div>
       </div>
+
+      {/* Chart for selected instrument */}
+      {selectedToken && ticks.get(selectedToken)?.symbol && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Chart — {ticks.get(selectedToken)?.symbol}</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <MarketFeedChart
+              symbol={ticks.get(selectedToken)!.symbol}
+              isConnected={status === 'CONNECTED'}
+            />
+          </CardContent>
+        </Card>
+      )}
 
       {/* Active Subscriptions Table */}
       <Card>

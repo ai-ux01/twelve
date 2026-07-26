@@ -1,0 +1,4 @@
+# file: /Users/anshulkumar/Desktop/twelve/apps/quant/trade_coach/trade_normalizer.py
+# hypothesis_version: 6.141.1
+
+[0.0, '%Y-%m-%d %H:%M:%S', '-EQ', 'B', 'S', 'averagePrice', 'buyAmt', 'default', 'displaySymbol', 'flDtTm', 'live', 'mktValue', 'nOrdNo', 'prc', 'qty', 'quantity', 'sellAmt', 'sym', 'symbol', 'trdSym', 'trnsTp', 'unrealisedGainLoss']

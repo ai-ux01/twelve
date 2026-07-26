@@ -1,3 +1,4 @@
+import asyncio
 import os
 from pathlib import Path
 from dotenv import load_dotenv
@@ -76,11 +77,17 @@ from services.intraday_scoring_service import (
 from services.options_chain_service import OptionsChainService
 from validators.symbol_validator import SymbolValidator
 
+# Import Signal Forwarder for auto paper trade forwarding
+from signal_forwarder.forwarder import SignalForwarder
+
 # Configure logging
 logging.basicConfig(
     level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
 )
 logger = logging.getLogger(__name__)
+
+# Module-level Signal Forwarder instance for auto paper trade forwarding
+_signal_forwarder = SignalForwarder()
 
 
 # === Rate Limiting Middleware ===
@@ -160,12 +167,15 @@ from contextlib import asynccontextmanager
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    """FastAPI lifespan: start/stop the trade monitor."""
+    """FastAPI lifespan: start/stop the trade monitor and trade sync service."""
     import os
     from paper_trading.trade_monitor import TradeMonitor
     from paper_trading.router import set_trade_monitor
+    from trade_sync import TradeSyncService, set_trade_sync_service
 
     api_base_url = os.environ.get("API_BASE_URL", "http://localhost:4000")
+
+    # --- Trade Monitor ---
     monitor_interval = int(os.environ.get("TRADE_MONITOR_INTERVAL", "30"))
     monitor_enabled = os.environ.get("TRADE_MONITOR_ENABLED", "true").lower() == "true"
 
@@ -179,11 +189,57 @@ async def lifespan(app: FastAPI):
         await trade_monitor.start()
         logger.info(f"Trade monitor started: interval={monitor_interval}s, api={api_base_url}")
 
+    # --- Trade Sync Service ---
+    sync_enabled = os.environ.get("TRADE_SYNC_ENABLED", "true").lower() == "true"
+    sync_interval = int(os.environ.get("TRADE_SYNC_INTERVAL", "60"))
+
+    trade_sync_service = TradeSyncService(
+        api_base_url=api_base_url,
+        interval=sync_interval,
+    )
+    set_trade_sync_service(trade_sync_service)
+
+    if sync_enabled:
+        await trade_sync_service.start()
+        logger.info(f"Trade sync service started: interval={sync_interval}s, api={api_base_url}")
+
+    # --- Intraday Scanner ---
+    from services.intraday_scanner_service import IntradayScannerService
+
+    intraday_scan_enabled = os.environ.get("INTRADAY_SCANNER_ENABLED", "true").lower() == "true"
+    intraday_scan_interval = int(os.environ.get("INTRADAY_SCANNER_INTERVAL", "300"))
+
+    intraday_scanner = IntradayScannerService(
+        interval_seconds=intraday_scan_interval,
+        api_base_url=api_base_url,
+    )
+
+    if intraday_scan_enabled:
+        await intraday_scanner.start()
+        logger.info(f"Intraday scanner started: interval={intraday_scan_interval}s")
+
+    # --- Kite Historical Data Backfill (runs once on startup) ---
+    backfill_enabled = os.environ.get("KITE_BACKFILL_ENABLED", "true").lower() == "true"
+    if backfill_enabled:
+        from market_data.kite_backfill_service import KiteBackfillService
+        backfill = KiteBackfillService()
+        asyncio.create_task(backfill.run_backfill())
+        logger.info("Kite historical data backfill started in background")
+
     yield
 
+    # --- Shutdown ---
     if trade_monitor.is_running:
         await trade_monitor.stop()
         logger.info("Trade monitor stopped during shutdown")
+
+    if trade_sync_service.is_running:
+        await trade_sync_service.stop()
+        logger.info("Trade sync service stopped during shutdown")
+
+    if intraday_scanner.is_running:
+        await intraday_scanner.stop()
+        logger.info("Intraday scanner stopped during shutdown")
 
 
 app = FastAPI(
@@ -256,6 +312,16 @@ app.include_router(agent_readiness_router)
 from market_data.router import router as market_data_router
 
 app.include_router(market_data_router)
+
+# Register Trade Sync router
+from trade_sync.router import router as trade_sync_router
+
+app.include_router(trade_sync_router)
+
+# Register Signal Forwarder Config router
+from signal_forwarder.router import router as signal_forwarder_router
+
+app.include_router(signal_forwarder_router)
 
 
 # Request models
@@ -2145,21 +2211,15 @@ async def api_swing_scan(request: dict = None) -> dict:
 
     body = request or {}
     min_score = body.get("minScore", 60)
-    max_results = body.get("maxResults", 20)
+    max_results = body.get("maxResults", 50)
 
-    # Get popular symbols from MongoDB (top traded by volume)
+    # Connect to MongoDB and get ALL available symbols with daily data
     provider = MongoMarketDataProvider()
     provider.connect()
 
-    # Use a curated list of liquid large-cap symbols for scanning
-    scan_symbols = [
-        "RELIANCE", "TCS", "INFY", "HDFCBANK", "ICICIBANK",
-        "HINDUNILVR", "ITC", "SBIN", "BHARTIARTL", "KOTAKBANK",
-        "LT", "AXISBANK", "ASIANPAINT", "MARUTI", "TITAN",
-        "SUNPHARMA", "BAJFINANCE", "WIPRO", "HCLTECH", "ULTRACEMCO",
-        "NESTLEIND", "TATAMOTORS", "TATASTEEL", "POWERGRID", "NTPC",
-        "ONGC", "COALINDIA", "ADANIENT", "ADANIPORTS", "TECHM",
-    ]
+    # Get all symbols from MongoDB directly (no limit)
+    scan_symbols = provider.get_symbols(limit=5000)
+    logger.info(f"Swing scan: found {len(scan_symbols)} symbols in MongoDB")
 
     candidates = []
     scanned = 0
@@ -2262,6 +2322,28 @@ async def api_swing_scan(request: dict = None) -> dict:
     # Sort by score descending and limit
     candidates.sort(key=lambda x: x["score"], reverse=True)
     candidates = candidates[:max_results]
+
+    # Fire-and-forget: forward qualifying swing signals to paper trading API
+    try:
+        # Normalize candidates to match forwarder's expected field names
+        normalized_candidates = [
+            {
+                "symbol": c["symbol"],
+                "score": c["score"],
+                "total_score": c["score"],
+                "entry_price": c["entry"],
+                "current_price": c["entry"],
+                "stop_loss": c["stopLoss"],
+                "target": c["target"],
+                "trend": c["trend"],
+                "rsi": c.get("rsi"),
+                "adx": c.get("adx"),
+            }
+            for c in candidates
+        ]
+        asyncio.create_task(_signal_forwarder.forward_swing_signals(normalized_candidates))
+    except Exception as e:
+        logger.warning(f"Failed to schedule swing signal forwarding: {e}")
 
     return {
         "scannedCount": scanned,
@@ -3341,6 +3423,38 @@ async def analyze_intraday_stock(
         logger.info(
             f"Intraday analysis completed for {request.symbol} in {analysis_time:.2f}ms"
         )
+
+        # Fire-and-forget: forward intraday signal to paper trading API
+        try:
+            # Determine direction for forwarder: LONG for BUY, SHORT for SELL
+            fwd_direction = "LONG"
+            if signal == IntradaySignal.SELL:
+                fwd_direction = "SHORT"
+            elif signal == IntradaySignal.BUY:
+                fwd_direction = "LONG"
+
+            # Build result dict for the forwarder
+            intraday_result_dict = {
+                "total_score": score_result.total_score,
+                "strength": score_result.strength,
+                "trend_score": score_result.components.trend_score,
+                "momentum_score": score_result.components.momentum_score,
+                "volume_score": score_result.components.volume_score,
+                "vwap_score": score_result.components.vwap_score,
+            }
+
+            asyncio.create_task(
+                _signal_forwarder.forward_intraday_signal(
+                    result=intraday_result_dict,
+                    symbol=request.symbol,
+                    current_price=current_price,
+                    stop_loss=stop_loss,
+                    target=target,
+                    direction=fwd_direction,
+                )
+            )
+        except Exception as e:
+            logger.warning(f"Failed to schedule intraday signal forwarding: {e}")
 
         # Construct and return result
         return IntradayAnalysisResult(

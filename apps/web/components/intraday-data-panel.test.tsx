@@ -8,11 +8,15 @@
  * - Displays support and resistance levels
  * - Shows RSI badges correctly
  * - Shows volume badges correctly
+ * - Trendline section renders with correct data
+ * - Badge colors for breakout statuses
+ * - "No trendline data" fallback when trendline prop is undefined
  */
 
 import { describe, it, expect } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import { IntradayDataPanel } from './intraday-data-panel';
+import { TrendlineData } from '@/lib/api-client';
 
 describe('IntradayDataPanel', () => {
   const mockData = {
@@ -196,5 +200,92 @@ describe('IntradayDataPanel', () => {
     render(<IntradayDataPanel data={mockData} />);
 
     expect(screen.getByText('1,000,000')).toBeInTheDocument();
+  });
+
+  describe('Trendlines section', () => {
+    const mockTrendline: TrendlineData = {
+      support_line: { slope: 0.5, intercept: 100, r_squared: 0.95, start_point: 0, end_point: 10 },
+      resistance_line: { slope: 0.3, intercept: 120, r_squared: 0.88, start_point: 0, end_point: 10 },
+      swing_points: [{ index: 0, price: 100, type: 'LOW' }],
+      breakout_status: 'NONE',
+      direction: 'UPTREND',
+      support_status: 'ACTIVE',
+      resistance_status: 'ACTIVE',
+      confidence: 0.856,
+    };
+
+    it('should render "Trendlines" section with correct data when trendline prop is provided', () => {
+      render(<IntradayDataPanel data={mockData} trendline={mockTrendline} />);
+
+      expect(screen.getByText('Trendlines')).toBeInTheDocument();
+      expect(screen.getByText('UPTREND')).toBeInTheDocument();
+      // Both support and resistance status are ACTIVE, so use getAllByText
+      const activeElements = screen.getAllByText('ACTIVE');
+      expect(activeElements.length).toBeGreaterThanOrEqual(2);
+      expect(screen.getByText('NONE')).toBeInTheDocument();
+      expect(screen.getByText('85.6%')).toBeInTheDocument();
+    });
+
+    it('should display direction field correctly', () => {
+      render(<IntradayDataPanel data={mockData} trendline={{ ...mockTrendline, direction: 'DOWNTREND' }} />);
+
+      expect(screen.getByText('DOWNTREND')).toBeInTheDocument();
+    });
+
+    it('should display support and resistance statuses', () => {
+      render(
+        <IntradayDataPanel
+          data={mockData}
+          trendline={{ ...mockTrendline, support_status: 'BROKEN', resistance_status: 'RETESTING' }}
+        />
+      );
+
+      expect(screen.getByText('BROKEN')).toBeInTheDocument();
+      expect(screen.getByText('RETESTING')).toBeInTheDocument();
+    });
+
+    it('should show green badge for BREAKOUT status', () => {
+      render(
+        <IntradayDataPanel data={mockData} trendline={{ ...mockTrendline, breakout_status: 'BREAKOUT' }} />
+      );
+
+      const badges = screen.getAllByText('BREAKOUT');
+      const badge = badges.find((el) => el.closest('.bg-green-600'));
+      expect(badge).toBeInTheDocument();
+    });
+
+    it('should show green badge for CONFIRMED status', () => {
+      render(
+        <IntradayDataPanel data={mockData} trendline={{ ...mockTrendline, breakout_status: 'CONFIRMED' }} />
+      );
+
+      const badges = screen.getAllByText('CONFIRMED');
+      const badge = badges.find((el) => el.closest('.bg-green-600'));
+      expect(badge).toBeInTheDocument();
+    });
+
+    it('should show red badge for BREAKDOWN status', () => {
+      render(
+        <IntradayDataPanel data={mockData} trendline={{ ...mockTrendline, breakout_status: 'BREAKDOWN' }} />
+      );
+
+      const badges = screen.getAllByText('BREAKDOWN');
+      const badge = badges.find((el) => el.closest('.bg-red-600'));
+      expect(badge).toBeInTheDocument();
+    });
+
+    it('should display "No trendline data" when trendline prop is undefined', () => {
+      render(<IntradayDataPanel data={mockData} />);
+
+      expect(screen.getByText('No trendline data')).toBeInTheDocument();
+    });
+
+    it('should display confidence as percentage with one decimal place', () => {
+      render(
+        <IntradayDataPanel data={mockData} trendline={{ ...mockTrendline, confidence: 0.923 }} />
+      );
+
+      expect(screen.getByText('92.3%')).toBeInTheDocument();
+    });
   });
 });

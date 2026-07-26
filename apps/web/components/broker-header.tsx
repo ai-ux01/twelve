@@ -89,7 +89,7 @@ export function BrokerHeader() {
   useEffect(() => {
     if (typeof window !== 'undefined') {
       const params = new URLSearchParams(window.location.search);
-      if (params.get('kite') === 'connected' || params.get('kotak') === 'connected') {
+      if (params.get('kite') === 'connected' || params.get('kite') === 'success' || params.get('kotak') === 'connected') {
         fetchStatus();
         // Clean URL
         window.history.replaceState({}, '', window.location.pathname);
@@ -97,12 +97,21 @@ export function BrokerHeader() {
     }
   }, [fetchStatus]);
 
-  const handleKiteConnect = () => {
-    window.location.href = `${API_BASE}/kite/login`;
+  const handleKiteConnect = async () => {
+    try {
+      const res = await fetch(`${API_BASE}/kite/login-url`);
+      const data = await res.json();
+      if (data.loginUrl) {
+        window.location.href = data.loginUrl;
+      }
+    } catch {
+      // Fallback: direct navigation
+      window.location.href = `${API_BASE}/kite/login-url`;
+    }
   };
 
   const handleKiteDisconnect = async () => {
-    await fetch(`${API_BASE}/kite/logout`);
+    await fetch(`${API_BASE}/kite/logout`, { method: 'POST' });
     setKiteStatus({ connected: false, expiresAt: null, apiKey: null });
   };
 

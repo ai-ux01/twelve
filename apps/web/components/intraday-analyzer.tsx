@@ -49,7 +49,57 @@ export function IntradayAnalyzer({ onAnalyzeComplete, onAnalyzeError }: Intraday
     setIsAnalyzing(true);
 
     try {
-      const response = await fetch('http://localhost:4000/intraday/analyze', {
+      // Step 1: Fetch candle data from MongoDB
+      const timeframeMap: Record<string, string> = { '1m': '1minute', '5m': '5minute', '15m': '15minute' };
+      const timeframe = timeframeMap[interval] || 'day';
+      const ohlcvRes = await fetch(
+        `http://localhost:8000/api/market-data/ohlcv?symbol=${symbol.toUpperCase()}&timeframe=${timeframe}&limit=100`
+      );
+
+      let ohlcvData: { open: number; high: number; low: number; close: number; volume: number }[] = [];
+
+      if (ohlcvRes.ok) {
+        const ohlcvJson = await ohlcvRes.json();
+        const candles = ohlcvJson.candles || ohlcvJson.data || ohlcvJson;
+        if (Array.isArray(candles) && candles.length > 0) {
+          ohlcvData = candles.map((c: any) => ({
+            timestamp: c.timestamp || new Date().toISOString(),
+            open: c.open,
+            high: c.high,
+            low: c.low,
+            close: c.close,
+            volume: c.volume || 0,
+          }));
+        }
+      }
+
+      // If no candle data from MongoDB, try daily candles as fallback
+      if (ohlcvData.length < 30) {
+        const dailyRes = await fetch(
+          `http://localhost:8000/api/market-data/ohlcv?symbol=${symbol.toUpperCase()}&timeframe=day&limit=100`
+        );
+        if (dailyRes.ok) {
+          const dailyJson = await dailyRes.json();
+          const dailyCandles = dailyJson.candles || dailyJson.data || dailyJson;
+          if (Array.isArray(dailyCandles) && dailyCandles.length >= 30) {
+            ohlcvData = dailyCandles.map((c: any) => ({
+              timestamp: c.timestamp || new Date().toISOString(),
+              open: c.open,
+              high: c.high,
+              low: c.low,
+              close: c.close,
+              volume: c.volume || 0,
+            }));
+          }
+        }
+      }
+
+      if (ohlcvData.length < 30) {
+        throw new Error(`Not enough candle data for ${symbol.toUpperCase()}. Need at least 30 candles, found ${ohlcvData.length}. Make sure market data is available in MongoDB.`);
+      }
+
+      // Step 2: Send to analyze endpoint with the candle data
+      const response = await fetch('http://localhost:8000/quant/intraday/analyze', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -57,6 +107,7 @@ export function IntradayAnalyzer({ onAnalyzeComplete, onAnalyzeError }: Intraday
         body: JSON.stringify({
           symbol: symbol.toUpperCase(),
           interval,
+          data: ohlcvData,
         }),
       });
 

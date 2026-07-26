@@ -8,6 +8,7 @@ const navLinks = [
   { href: '/', label: 'Dashboard' },
   { href: '/analysis', label: 'Analysis' },
   { href: '/swing', label: 'Swing Scanner' },
+  { href: '/intraday', label: 'Intraday' },
   { href: '/options-scalper', label: 'Options Scalper' },
   { href: '/portfolio', label: 'Portfolio' },
   { href: '/ai-trading', label: 'AI Trading' },

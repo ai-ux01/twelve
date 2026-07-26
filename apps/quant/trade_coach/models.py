@@ -18,7 +18,7 @@ from pydantic import BaseModel, Field
 
 
 class BehaviorPattern(str, Enum):
-    """Detectable trading behavior patterns (10 patterns)."""
+    """Detectable trading behavior patterns (10 core + live-specific patterns)."""
     OVERTRADING = "overtrading"
     REVENGE_TRADING = "revenge_trading"
     OVERSIZING = "oversizing"
@@ -29,6 +29,7 @@ class BehaviorPattern(str, Enum):
     MOVING_STOPS = "moving_stops"
     EARLY_EXITS = "early_exits"
     LATE_EXITS = "late_exits"
+    PARTIAL_FILLS = "partial_fills"
 
 
 class BehaviorSeverity(str, Enum):
@@ -99,6 +100,14 @@ class CoachRequest(BaseModel):
         default=None,
         description="Filter by source: paper, live, backtest"
     )
+    data_source: str = Field(
+        default="paper",
+        description="Data source mode: paper, live, or combined"
+    )
+    session_id: Optional[str] = Field(
+        default=None,
+        description="Kotak Neo session ID, required when data_source is live or combined"
+    )
 
 
 class BehaviorDetectionResponse(BaseModel):
@@ -136,6 +145,9 @@ class CoachResponse(BaseModel):
     behaviors: List[BehaviorDetectionResponse] = []
     total_trades_analyzed: int = 0
     data_source: str = "stored_trade_statistics"
+    live_trade_count: Optional[int] = None
+    paper_trade_count: Optional[int] = None
+    slippage_summary: Optional[Dict] = None
     generated_at: Optional[str] = None
 
 

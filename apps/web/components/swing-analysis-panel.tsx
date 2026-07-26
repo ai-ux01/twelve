@@ -10,10 +10,11 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
-import { SwingCandidate } from '@/lib/api-client';
+import { SwingCandidate, TrendlineData } from '@/lib/api-client';
 
 export interface SwingAnalysisPanelProps {
   candidate: SwingCandidate;
+  trendline?: TrendlineData;
 }
 
 /**
@@ -25,8 +26,10 @@ export interface SwingAnalysisPanelProps {
  * - Entry/Exit Levels
  * - Scoring Breakdown (component scores with visual indicators)
  */
-export function SwingAnalysisPanel({ candidate }: SwingAnalysisPanelProps) {
+export function SwingAnalysisPanel({ candidate, trendline }: SwingAnalysisPanelProps) {
   const { symbol, score, trend, setupType, entry, stopLoss, target, riskReward, components } = candidate;
+  // Use explicit trendline prop if provided, otherwise fall back to candidate.trendline
+  const trendlineData = trendline ?? candidate.trendline;
 
   const getScoreColor = (score: number) => {
     if (score >= 80) return 'bg-green-500';
@@ -103,15 +106,49 @@ export function SwingAnalysisPanel({ candidate }: SwingAnalysisPanelProps) {
           <div>
             <h3 className="text-lg font-semibold mb-3">Scoring Breakdown</h3>
             <div className="space-y-3">
-              <ScoreRow label="Trend" score={components.trendScore} weight={20} />
-              <ScoreRow label="Technical" score={components.technicalScore} weight={20} />
-              <ScoreRow label="Volume" score={components.volumeScore} weight={15} />
-              <ScoreRow label="Relative Strength" score={components.relativeStrengthScore} weight={15} />
-              <ScoreRow label="Breakout" score={components.breakoutScore} weight={10} />
-              <ScoreRow label="Sector" score={components.sectorScore} weight={10} />
-              <ScoreRow label="Risk/Reward" score={components.riskRewardScore} weight={10} />
+              <ScoreRow label="Trend" score={components?.trendScore ?? 0} weight={20} />
+              <ScoreRow label="Technical" score={components?.technicalScore ?? 0} weight={20} />
+              <ScoreRow label="Volume" score={components?.volumeScore ?? 0} weight={15} />
+              <ScoreRow label="Relative Strength" score={components?.relativeStrengthScore ?? 0} weight={15} />
+              <ScoreRow label="Breakout" score={components?.breakoutScore ?? 0} weight={10} />
+              <ScoreRow label="Sector" score={components?.sectorScore ?? 0} weight={10} />
+              <ScoreRow label="Risk/Reward" score={components?.riskRewardScore ?? 0} weight={10} />
             </div>
           </div>
+
+          {/* Trendline Analysis Section - omitted when trendline data is not available */}
+          {trendlineData && (
+            <>
+              <Separator />
+              <div>
+                <h3 className="text-lg font-semibold mb-3">Trendline Analysis</h3>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <p className="text-sm text-muted-foreground">Direction</p>
+                    <p className={`text-lg font-medium ${getDirectionColor(trendlineData.direction)}`}>
+                      {trendlineData.direction}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-muted-foreground">Breakout Status</p>
+                    <p className="text-lg font-medium">{trendlineData.breakout_status}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-muted-foreground">Confidence</p>
+                    <p className="text-lg font-medium">{(trendlineData.confidence * 100).toFixed(1)}%</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-muted-foreground">Support Status</p>
+                    <p className="text-lg font-medium">{trendlineData.support_status}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-muted-foreground">Resistance Status</p>
+                    <p className="text-lg font-medium">{trendlineData.resistance_status}</p>
+                  </div>
+                </div>
+              </div>
+            </>
+          )}
         </div>
       </CardContent>
     </Card>
@@ -144,4 +181,13 @@ function ScoreRow({ label, score, weight }: { label: string; score: number; weig
       </div>
     </div>
   );
+}
+
+/**
+ * Helper function to get direction color for trendline display
+ */
+function getDirectionColor(direction: string): string {
+  if (direction === 'UPTREND') return 'text-green-600';
+  if (direction === 'DOWNTREND') return 'text-red-600';
+  return 'text-gray-600';
 }

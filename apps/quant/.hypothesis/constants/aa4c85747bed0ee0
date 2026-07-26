@@ -1,0 +1,4 @@
+# file: /Users/anshulkumar/Desktop/twelve/apps/quant/trade_coach/router.py
+# hypothesis_version: 6.141.1
+
+[400, '/analyze', '/api/trade-coach', '/behaviors', '/compare', 'Kotak Neo session ID', 'User ID to analyze', 'combined', 'default', 'id', 'live', 'live-', 'paper', 'trade-coach']

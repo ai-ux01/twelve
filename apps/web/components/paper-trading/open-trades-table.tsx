@@ -119,7 +119,7 @@ export function OpenTradesTable({
                 <TableHead className="text-right">Stop Loss</TableHead>
                 <TableHead className="text-right">Target</TableHead>
                 <TableHead className="text-right">Unrealized P&L</TableHead>
-                <TableHead>Time</TableHead>
+                <TableHead>Entry Date</TableHead>
                 <TableHead className="text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
@@ -164,8 +164,9 @@ export function OpenTradesTable({
                     >
                       {currencyFormatter.format(pnl)}
                     </TableCell>
-                    <TableCell className="text-muted-foreground">
-                      {formatTimeSince(trade.enteredAt)}
+                    <TableCell className="text-muted-foreground text-xs">
+                      <div>{new Date(trade.enteredAt).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}</div>
+                      <div>{new Date(trade.enteredAt).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })}</div>
                     </TableCell>
                     <TableCell className="text-right">
                       <div className="flex items-center justify-end gap-1">

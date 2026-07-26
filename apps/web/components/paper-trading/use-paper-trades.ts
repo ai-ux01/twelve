@@ -19,7 +19,8 @@ import type {
 } from './types';
 
 const API_BASE = 'http://localhost:4000/api';
-const USER_ID = 'demo-user';
+import { DEFAULT_USER_ID } from '@/lib/constants';
+const USER_ID = DEFAULT_USER_ID;
 const OPEN_TRADES_REFRESH_INTERVAL = 30_000; // 30 seconds
 
 interface UsePaperTradesOptions {

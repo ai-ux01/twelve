@@ -21,7 +21,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
-import { AlertCircle, TrendingUp, TrendingDown, Minus } from 'lucide-react';
+import { AlertCircle, TrendingUp, TrendingDown, Minus, ArrowUpRight, ArrowDownRight } from 'lucide-react';
 
 export interface SignalData {
   signalType: 'BUY CE' | 'BUY PE' | 'HOLD';
@@ -39,6 +39,14 @@ export interface SignalData {
   supportLevel: number | null;
   resistanceLevel: number | null;
   holdReason?: string | null;
+  /** Trendline direction from trendline analysis (UPTREND, DOWNTREND, SIDEWAYS) */
+  trendlineDirection?: 'UPTREND' | 'DOWNTREND' | 'SIDEWAYS' | null;
+  /** Breakout status from trendline analysis (NONE, BREAKOUT, BREAKDOWN, CONFIRMED) */
+  breakoutStatus?: 'NONE' | 'BREAKOUT' | 'BREAKDOWN' | 'CONFIRMED' | null;
+  /** Support level derived from trendline analysis */
+  trendlineSupportLevel?: number | null;
+  /** Resistance level derived from trendline analysis */
+  trendlineResistanceLevel?: number | null;
 }
 
 export interface SignalCardProps {
@@ -148,6 +156,13 @@ export function SignalCard({ signal }: SignalCardProps) {
     if (!trend) return null;
     if (trend.toLowerCase() === 'bullish') return <TrendingUp className="h-4 w-4 text-green-600" />;
     if (trend.toLowerCase() === 'bearish') return <TrendingDown className="h-4 w-4 text-red-600" />;
+    return <Minus className="h-4 w-4 text-yellow-600" />;
+  };
+
+  const getTrendlineDirectionIcon = (direction: string | null | undefined) => {
+    if (!direction) return null;
+    if (direction === 'UPTREND') return <TrendingUp className="h-4 w-4 text-green-600" />;
+    if (direction === 'DOWNTREND') return <TrendingDown className="h-4 w-4 text-red-600" />;
     return <Minus className="h-4 w-4 text-yellow-600" />;
   };
 
@@ -261,6 +276,33 @@ export function SignalCard({ signal }: SignalCardProps) {
               {displayedSignal.trendlineStatus || 'N/A'}
             </span>
           </div>
+          <div className="flex items-center gap-2">
+            <span className="text-muted-foreground">Direction:</span>
+            <span className="flex items-center gap-1 font-medium">
+              {getTrendlineDirectionIcon(displayedSignal.trendlineDirection)}
+              {displayedSignal.trendlineDirection || 'N/A'}
+            </span>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="text-muted-foreground">Breakout:</span>
+            <span className="flex items-center gap-1 font-medium">
+              {displayedSignal.breakoutStatus && displayedSignal.breakoutStatus !== 'NONE' ? (
+                <Badge
+                  variant={displayedSignal.breakoutStatus === 'BREAKDOWN' ? 'destructive' : 'default'}
+                  className="text-xs"
+                >
+                  {displayedSignal.breakoutStatus === 'BREAKOUT' || displayedSignal.breakoutStatus === 'CONFIRMED' ? (
+                    <ArrowUpRight className="h-3 w-3 mr-0.5" />
+                  ) : (
+                    <ArrowDownRight className="h-3 w-3 mr-0.5" />
+                  )}
+                  {displayedSignal.breakoutStatus}
+                </Badge>
+              ) : (
+                displayedSignal.breakoutStatus || 'N/A'
+              )}
+            </span>
+          </div>
         </div>
 
         {/* Support & Resistance Levels */}
@@ -278,6 +320,22 @@ export function SignalCard({ signal }: SignalCardProps) {
             <span className="font-medium">
               {displayedSignal.resistanceLevel !== null && displayedSignal.resistanceLevel !== undefined
                 ? `₹${displayedSignal.resistanceLevel.toFixed(2)}`
+                : 'N/A'}
+            </span>
+          </div>
+          <div>
+            <span className="text-muted-foreground">TL Support: </span>
+            <span className="font-medium">
+              {displayedSignal.trendlineSupportLevel !== null && displayedSignal.trendlineSupportLevel !== undefined
+                ? `₹${displayedSignal.trendlineSupportLevel.toFixed(2)}`
+                : 'N/A'}
+            </span>
+          </div>
+          <div>
+            <span className="text-muted-foreground">TL Resistance: </span>
+            <span className="font-medium">
+              {displayedSignal.trendlineResistanceLevel !== null && displayedSignal.trendlineResistanceLevel !== undefined
+                ? `₹${displayedSignal.trendlineResistanceLevel.toFixed(2)}`
                 : 'N/A'}
             </span>
           </div>

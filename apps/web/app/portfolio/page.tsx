@@ -12,7 +12,8 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { RefreshCw, Wallet, TrendingUp, TrendingDown } from 'lucide-react';
 
-const DEFAULT_USER_ID = 'demo-user';
+import { DEFAULT_USER_ID } from '@/lib/constants';
+
 
 function formatCurrency(value: number): string {
   return `₹${value.toLocaleString('en-IN', {

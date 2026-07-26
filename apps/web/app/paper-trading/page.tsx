@@ -12,11 +12,15 @@
 'use client';
 
 import { useState } from 'react';
+import dynamic from 'next/dynamic';
 import { OpenTradesTable } from '@/components/paper-trading/open-trades-table';
 import { ClosedTradesTable } from '@/components/paper-trading/closed-trades-table';
 import { PerformanceMetricsPanel } from '@/components/paper-trading/performance-metrics-panel';
 import { usePaperTrades } from '@/components/paper-trading/use-paper-trades';
 import type { TradeTypeFilter } from '@/components/paper-trading/types';
+
+const EquityCurveChart = dynamic(() => import('@/components/charts/EquityCurveChart'), { ssr: false });
+const TradePnLChart = dynamic(() => import('@/components/charts/TradePnLChart'), { ssr: false });
 
 const TRADE_TYPE_OPTIONS: { value: TradeTypeFilter; label: string }[] = [
   { value: 'ALL', label: 'All' },
@@ -109,6 +113,34 @@ export default function PaperTradingPage() {
           onPageChange={setClosedTradesPage}
         />
       </div>
+
+      {/* Performance Charts */}
+      {(() => {
+        const chartTrades = (closedTrades?.data ?? [])
+          .filter((t) => t.exitedAt && t.realizedPnL != null)
+          .map((t) => ({ closedAt: t.exitedAt!, realizedPnL: t.realizedPnL! }));
+
+        if (chartTrades.length === 0) {
+          return (
+            <div className="mt-6 rounded-lg border p-8 text-center text-sm text-muted-foreground">
+              No closed trades yet. Charts will appear once you close some trades.
+            </div>
+          );
+        }
+
+        return (
+          <div className="mt-6 grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div className="rounded-lg border p-4">
+              <h3 className="text-sm font-medium mb-2">Equity Curve</h3>
+              <EquityCurveChart trades={chartTrades} height={250} />
+            </div>
+            <div className="rounded-lg border p-4">
+              <h3 className="text-sm font-medium mb-2">Trade P&L</h3>
+              <TradePnLChart trades={chartTrades} height={250} />
+            </div>
+          </div>
+        );
+      })()}
     </div>
   );
 }

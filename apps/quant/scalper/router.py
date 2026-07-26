@@ -32,6 +32,20 @@ from scalper.models import (
 
 logger = logging.getLogger(__name__)
 
+# Module-level Signal Forwarder instance for auto paper trade forwarding
+# Lazy-initialized to avoid circular imports (scalper -> signal_forwarder -> scalper.models -> scalper)
+_signal_forwarder = None
+
+
+def _get_signal_forwarder():
+    """Lazily initialize the SignalForwarder to avoid circular imports."""
+    global _signal_forwarder
+    if _signal_forwarder is None:
+        from signal_forwarder.forwarder import SignalForwarder
+        _signal_forwarder = SignalForwarder()
+    return _signal_forwarder
+
+
 router = APIRouter(prefix="/api/options-scalper", tags=["options-scalper"])
 
 
@@ -273,6 +287,12 @@ async def analyze(request: AnalyzeRequest) -> AnalyzeResponse:
 
         # Store in history
         _store_analysis_record(result)
+
+        # Fire-and-forget: forward signal to paper trading API
+        try:
+            asyncio.create_task(_get_signal_forwarder().forward_scalper_signal(result))
+        except Exception as e:
+            logger.warning(f"Failed to schedule signal forwarding: {e}")
 
         return AnalyzeResponse(success=True, data=result)
 
