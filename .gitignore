@@ -76,3 +76,6 @@ apps/quant/data/*.json
 .cache/
 temp/
 tmp/
+
+# Market data dumps
+candles.json
