@@ -4,6 +4,7 @@ import { RiskService, TradeRequest } from '../risk/risk.service';
 import { PaperTradingService, PaperTradeRequest } from './paper-trading.service';
 import { KotakNeoProvider, PlaceOrderRequest } from './brokers/kotak-neo.provider';
 import { AuditLogService } from '../audit/audit.service';
+import { KillSwitchService } from './kill-switch/kill-switch.service';
 
 export interface TradeResult {
   tradeId: string;
@@ -39,7 +40,8 @@ export class TradingService {
     private readonly riskService: RiskService,
     private readonly paperTradingService: PaperTradingService,
     private readonly kotakNeoProvider: KotakNeoProvider,
-    private readonly auditLogService: AuditLogService
+    private readonly auditLogService: AuditLogService,
+    private readonly killSwitchService: KillSwitchService
   ) {}
 
   /**
@@ -121,6 +123,16 @@ export class TradingService {
     this.logger.log(
       `Live trade request: ${tradeRequest.action} ${tradeRequest.quantity} ${tradeRequest.symbol} (confirmed: ${userConfirmed})`
     );
+
+    // STEP 0: Kill Switch Check (defense in depth — also checked at controller level)
+    if (!this.killSwitchService.isLiveTradingAllowed()) {
+      this.logger.warn('Live trade rejected: Kill switch is enabled');
+      return {
+        tradeId: '',
+        status: 'FAILED',
+        error: 'Live trading is disabled. Kill switch is active.',
+      };
+    }
 
     // STEP 1: Enforce user confirmation (Requirement 10.1)
     // CRITICAL: This prevents AI from executing trades without human approval

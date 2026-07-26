@@ -1,0 +1,4 @@
+# file: /Users/anshulkumar/Desktop/twelve/apps/quant/agents/service.py
+# hypothesis_version: 6.141.1
+
+[403, 404, 409, 422, 1000, 'Action not found', 'Agent not found', 'Decision not found', 'Execution not found', 'Invalid transition', 'Policy not found', 'Task not found', 'action', 'action_id', 'actions', 'agent_id', 'agents', 'allowed_transitions', 'current_status', 'decision_id', 'decisions', 'detail', 'disable', 'execution_id', 'executions', 'invalid_ids', 'memory', 'memory_id', 'observations', 'outcomes', 'pause', 'policies', 'policy_id', 'python', 'reason', 'requested_status', 'status_transitions', 'supervisor_action', 'target_id', 'task_id', 'tasks']

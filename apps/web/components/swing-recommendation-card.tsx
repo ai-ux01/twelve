@@ -16,6 +16,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Loader2, TrendingUp } from 'lucide-react';
 import { apiClient, SwingCandidate } from '@/lib/api-client';
+import { kotakApi } from '@/lib/kotak-api';
 
 export interface SwingRecommendationCardProps {
   candidate: SwingCandidate;
@@ -84,6 +85,49 @@ export function SwingRecommendationCard({
       if (onPaperTradeError) {
         onPaperTradeError(error instanceof Error ? error : new Error(errorMessage));
       }
+    } finally {
+      setIsExecuting(false);
+    }
+  };
+
+  const handlePlaceLiveOrder = async (transactionType: 'B' | 'S') => {
+    if (!kotakApi.getSessionId()) {
+      setExecutionResult({ success: false, message: 'Connect Kotak Neo first (from header).' });
+      return;
+    }
+
+    const confirmed = window.confirm(
+      `⚠️ LIVE ORDER\n\n${transactionType === 'B' ? 'BUY' : 'SELL'} ${symbol}\nQty: 1\nPrice: Market\nProduct: CNC\n\nThis will use REAL money. Continue?`
+    );
+    if (!confirmed) return;
+
+    setIsExecuting(true);
+    setExecutionResult(null);
+
+    try {
+      const result = await kotakApi.placeOrder({
+        am: 'NO',
+        dq: '0',
+        es: 'nse_cm',
+        mp: '0',
+        pc: 'CNC',
+        pf: 'N',
+        pr: '0',
+        pt: 'MKT',
+        qt: '1',
+        rt: 'DAY',
+        tp: '0',
+        ts: `${symbol}-EQ`,
+        tt: transactionType,
+      });
+
+      if (result?.stat === 'Ok' || result?.nOrdNo) {
+        setExecutionResult({ success: true, message: `Order placed! ID: ${result.nOrdNo}` });
+      } else {
+        setExecutionResult({ success: false, message: result?.emsg || 'Order failed' });
+      }
+    } catch (error: any) {
+      setExecutionResult({ success: false, message: error.message || 'Live order failed' });
     } finally {
       setIsExecuting(false);
     }
@@ -199,9 +243,30 @@ export function SwingRecommendationCard({
           )}
         </Button>
 
+        {/* Live Order Buttons (Kotak Neo) */}
+        <div className="flex gap-2">
+          <Button
+            onClick={() => handlePlaceLiveOrder('B')}
+            disabled={isExecuting}
+            className="flex-1 bg-green-600 hover:bg-green-700"
+            size="lg"
+          >
+            BUY LIVE
+          </Button>
+          <Button
+            onClick={() => handlePlaceLiveOrder('S')}
+            disabled={isExecuting}
+            variant="destructive"
+            className="flex-1"
+            size="lg"
+          >
+            SELL LIVE
+          </Button>
+        </div>
+
         {/* Safety Notice */}
         <p className="text-xs text-muted-foreground text-center">
-          This is a paper trade (simulated). No real money will be used.
+          Paper trade is simulated. Live orders require Kotak Neo connection and will use real money.
         </p>
       </CardContent>
     </Card>

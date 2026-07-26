@@ -1,0 +1,4 @@
+# file: /Users/anshulkumar/Desktop/twelve/apps/quant/trading_lab/intent_detector.py
+# hypothesis_version: 6.141.1
+
+[0.0, 0.1, 0.6, 1.0, 2.0, 'AI_MODEL', 'OPENAI_API_KEY', 'confidence', 'content', 'gpt-4', 'intent', 'json_object', 'role', 'symbols', 'system', 'type', 'user']

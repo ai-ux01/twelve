@@ -1,0 +1,4 @@
+# file: /Users/anshulkumar/Desktop/twelve/apps/quant/trade_analysis/repository.py
+# hypothesis_version: 6.141.1
+
+['created_at', 'direction', 'entry_date', 'exit_date', 'market_regime', 'updated_at']

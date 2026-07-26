@@ -1,0 +1,4 @@
+# file: /Users/anshulkumar/Desktop/twelve/apps/quant/scalper/ai_analysis_engine.py
+# hypothesis_version: 6.141.1
+
+[-0.1, 0.0, 0.1, 0.15, 0.3, 0.5, 0.7, 0.9, 1.0, 1.5, 2.0, 100.0, 100, 295, 300, 1000, '.', '; ', 'AI_MODEL', 'Above average volume', 'BUY CE', 'BUY PE', 'Bearish', 'Bearish Engulfing', 'Bearish zone', 'Bullish', 'Bullish Engulfing', 'Bullish zone', 'Confidence 0-100%', 'Doji (indecision)', 'HOLD', 'Inverted Hammer', 'Neutral', 'No pattern', 'OPENAI_API_KEY', 'atr', 'close', 'content', 'ema', 'entry_price', 'gpt-4', 'high', 'indicators', 'json_object', 'low', 'macd', 'oi_interpretation', 'open', 'options_sentiment', 'price_action', 'probability', 'rationale', 'resistance_level', 'role', 'rsi', 'signal_type', 'spot_price', 'stop_loss', 'support_level', 'support_resistance', 'system', 'target_price', 'trend', 'trendline_status', 'type', 'user', 'volume', 'vwap']

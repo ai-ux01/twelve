@@ -1,0 +1,4 @@
+# file: /Users/anshulkumar/Desktop/twelve/apps/quant/trade_coach/models.py
+# hypothesis_version: 6.141.1
+
+[0.0, 'User ID to analyze', 'chasing', 'counter_trend', 'critical', 'default', 'early_exits', 'high', 'late_exits', 'low', 'medium', 'moving_stops', 'oversizing', 'overtrading', 'poor_risk_reward', 'revenge_trading', 'weak_setups']

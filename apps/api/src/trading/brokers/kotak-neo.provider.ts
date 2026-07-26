@@ -1,6 +1,19 @@
 import { Injectable, Logger, HttpException, HttpStatus } from '@nestjs/common';
 import { ConfigService } from '../../config/config.service';
+import { AuditLogService } from '../../audit/audit.service';
 import axios, { AxiosInstance } from 'axios';
+import {
+  BrokerOrder,
+  BrokerPosition,
+  BrokerHolding,
+  BrokerTrade,
+  ModifyOrderRequest,
+  CancelOrderRequest,
+  KotakNeoRawOrderResponse,
+  KotakNeoRawPositionResponse,
+  KotakNeoRawHoldingResponse,
+  KotakNeoRawTradeResponse,
+} from './kotak-neo.interfaces';
 
 /**
  * Order placement request structure
@@ -84,8 +97,19 @@ export class KotakNeoProvider {
   private readonly CIRCUIT_BREAKER_THRESHOLD = 5; // 5 failures trigger circuit breaker
   private readonly CIRCUIT_BREAKER_TIMEOUT_MS = 30000; // 30 seconds cooldown
 
-  constructor(private readonly configService: ConfigService) {
-    const apiKey = this.configService.kotakApiKey;
+  // Session token for authenticated requests (refreshable)
+  private sessionToken: string | undefined;
+  private isRefreshing = false;
+
+  constructor(
+    private readonly configService: ConfigService,
+    private readonly auditLogService: AuditLogService
+  ) {
+    // Validate required environment variables
+    this.validateEnvironmentVariables();
+
+    const apiKey = this.configService.kotakNeoConsumerKey;
+    this.sessionToken = this.configService.kotakNeoSessionToken;
 
     // Initialize HTTP client with Kotak Neo base URL
     this.httpClient = axios.create({
@@ -105,6 +129,78 @@ export class KotakNeoProvider {
     };
 
     this.logger.log('KotakNeoProvider initialized');
+  }
+
+  /**
+   * Validate that required Kotak Neo environment variables are present.
+   * Logs warnings for missing optional credentials.
+   */
+  private validateEnvironmentVariables(): void {
+    const consumerKey = this.configService.kotakNeoConsumerKey;
+    const consumerSecret = this.configService.kotakNeoConsumerSecret;
+    const accessToken = this.configService.kotakNeoAccessToken;
+
+    if (!consumerKey) {
+      this.logger.warn('KOTAK_NEO_CONSUMER_KEY is not configured. Broker API calls will fail.');
+    }
+    if (!consumerSecret) {
+      this.logger.warn('KOTAK_NEO_CONSUMER_SECRET is not configured. Token refresh will fail.');
+    }
+    if (!accessToken) {
+      this.logger.warn('KOTAK_NEO_ACCESS_TOKEN is not configured. Broker API calls will fail.');
+    }
+  }
+
+  /**
+   * Refresh the session token using stored credentials.
+   * Called automatically on 401 responses.
+   *
+   * @returns true if refresh was successful, false otherwise
+   */
+  async refreshToken(): Promise<boolean> {
+    if (this.isRefreshing) {
+      return false;
+    }
+
+    this.isRefreshing = true;
+    this.logger.log('Attempting to refresh session token...');
+
+    try {
+      const consumerKey = this.configService.kotakNeoConsumerKey;
+      const consumerSecret = this.configService.kotakNeoConsumerSecret;
+      const accessToken = this.configService.kotakNeoAccessToken;
+
+      if (!consumerKey || !consumerSecret || !accessToken) {
+        this.logger.error('Cannot refresh token: missing credentials');
+        return false;
+      }
+
+      const response = await axios.post(
+        'https://gw-napi.kotaksecurities.com/login/1.0/login/v2/validate',
+        {
+          userId: consumerKey,
+          password: consumerSecret,
+          accessToken,
+        },
+        { timeout: this.REQUEST_TIMEOUT_MS }
+      );
+
+      if (response.data?.token) {
+        this.sessionToken = response.data.token;
+        // Update the default headers with new token
+        this.httpClient.defaults.headers['Authorization'] = `Bearer ${this.sessionToken}`;
+        this.logger.log('Session token refreshed successfully');
+        return true;
+      }
+
+      this.logger.error('Token refresh failed: no token in response');
+      return false;
+    } catch (error: any) {
+      this.logger.error(`Token refresh failed: ${error.message}`);
+      return false;
+    } finally {
+      this.isRefreshing = false;
+    }
   }
 
   /**
@@ -401,8 +497,13 @@ export class KotakNeoProvider {
     if (error.isAxiosError && error.response && error.response.status) {
       const status = error.response.status;
 
-      // Don't retry on authentication (401, 403) or validation errors (400)
-      if (status === 401 || status === 403 || status === 400) {
+      // 401 is retryable after token refresh
+      if (status === 401) {
+        return true;
+      }
+
+      // Don't retry on 403 or validation errors (400)
+      if (status === 403 || status === 400) {
         return false;
       }
 
@@ -418,6 +519,25 @@ export class KotakNeoProvider {
     }
 
     return false;
+  }
+
+  /**
+   * Execute with retry, including automatic token refresh on 401
+   */
+  private async executeWithRetryAndAuth<T>(operation: () => Promise<T>): Promise<T> {
+    try {
+      return await this.executeWithRetry(operation);
+    } catch (error: any) {
+      // On 401, attempt token refresh and retry once
+      if (error.isAxiosError && error.response?.status === 401) {
+        this.logger.warn('Received 401, attempting token refresh...');
+        const refreshed = await this.refreshToken();
+        if (refreshed) {
+          return await operation();
+        }
+      }
+      throw error;
+    }
   }
 
   /**
@@ -548,5 +668,526 @@ export class KotakNeoProvider {
     this.circuitBreaker.lastFailureTime = null;
     this.circuitBreaker.state = 'CLOSED';
     this.logger.log('Circuit breaker manually reset to CLOSED state');
+  }
+
+  // ============ Read Operations (Task 3) ============
+
+  /**
+   * Get all orders from Kotak Neo order book
+   *
+   * @returns Array of standardized BrokerOrder objects
+   * @throws HttpException on authentication or broker errors
+   */
+  async getOrders(): Promise<BrokerOrder[]> {
+    this.logger.debug('Fetching order book from Kotak Neo');
+    this.checkCircuitBreaker();
+
+    const startTime = Date.now();
+
+    try {
+      const response = await this.executeWithRetryAndAuth(async () => {
+        const result = await this.httpClient.get('/Orders/2.0/quick/user/orders');
+        return result.data;
+      });
+
+      this.onSuccess();
+
+      const orders = this.transformOrdersResponse(response);
+
+      // Audit log
+      await this.auditLogService.logBrokerCall(
+        'get_orders',
+        'system',
+        {},
+        true,
+        undefined,
+        { count: orders.length, latencyMs: Date.now() - startTime }
+      );
+
+      return orders;
+    } catch (error) {
+      this.onFailure();
+      await this.auditLogService.logBrokerCall(
+        'get_orders',
+        'system',
+        {},
+        false,
+        (error as any).message,
+        { latencyMs: Date.now() - startTime }
+      );
+      this.handleError(error, 'getOrders');
+    }
+  }
+
+  /**
+   * Get all positions from Kotak Neo
+   *
+   * @returns Array of standardized BrokerPosition objects
+   */
+  async getPositions(): Promise<BrokerPosition[]> {
+    this.logger.debug('Fetching positions from Kotak Neo');
+    this.checkCircuitBreaker();
+
+    const startTime = Date.now();
+
+    try {
+      const response = await this.executeWithRetryAndAuth(async () => {
+        const result = await this.httpClient.get('/Orders/2.0/quick/user/positions');
+        return result.data;
+      });
+
+      this.onSuccess();
+
+      const positions = this.transformPositionsResponse(response);
+
+      await this.auditLogService.logBrokerCall(
+        'get_positions',
+        'system',
+        {},
+        true,
+        undefined,
+        { count: positions.length, latencyMs: Date.now() - startTime }
+      );
+
+      return positions;
+    } catch (error) {
+      this.onFailure();
+      await this.auditLogService.logBrokerCall(
+        'get_positions',
+        'system',
+        {},
+        false,
+        (error as any).message,
+        { latencyMs: Date.now() - startTime }
+      );
+      this.handleError(error, 'getPositions');
+    }
+  }
+
+  /**
+   * Get all holdings from Kotak Neo
+   *
+   * @returns Array of standardized BrokerHolding objects
+   */
+  async getHoldings(): Promise<BrokerHolding[]> {
+    this.logger.debug('Fetching holdings from Kotak Neo');
+    this.checkCircuitBreaker();
+
+    const startTime = Date.now();
+
+    try {
+      const response = await this.executeWithRetryAndAuth(async () => {
+        const result = await this.httpClient.get('/Orders/2.0/quick/user/holdings');
+        return result.data;
+      });
+
+      this.onSuccess();
+
+      const holdings = this.transformHoldingsResponse(response);
+
+      await this.auditLogService.logBrokerCall(
+        'get_holdings',
+        'system',
+        {},
+        true,
+        undefined,
+        { count: holdings.length, latencyMs: Date.now() - startTime }
+      );
+
+      return holdings;
+    } catch (error) {
+      this.onFailure();
+      await this.auditLogService.logBrokerCall(
+        'get_holdings',
+        'system',
+        {},
+        false,
+        (error as any).message,
+        { latencyMs: Date.now() - startTime }
+      );
+      this.handleError(error, 'getHoldings');
+    }
+  }
+
+  /**
+   * Get all trades from Kotak Neo trade book
+   *
+   * @returns Array of standardized BrokerTrade objects
+   */
+  async getTrades(): Promise<BrokerTrade[]> {
+    this.logger.debug('Fetching trade book from Kotak Neo');
+    this.checkCircuitBreaker();
+
+    const startTime = Date.now();
+
+    try {
+      const response = await this.executeWithRetryAndAuth(async () => {
+        const result = await this.httpClient.get('/Orders/2.0/quick/user/trades');
+        return result.data;
+      });
+
+      this.onSuccess();
+
+      const trades = this.transformTradesResponse(response);
+
+      await this.auditLogService.logBrokerCall(
+        'get_trades',
+        'system',
+        {},
+        true,
+        undefined,
+        { count: trades.length, latencyMs: Date.now() - startTime }
+      );
+
+      return trades;
+    } catch (error) {
+      this.onFailure();
+      await this.auditLogService.logBrokerCall(
+        'get_trades',
+        'system',
+        {},
+        false,
+        (error as any).message,
+        { latencyMs: Date.now() - startTime }
+      );
+      this.handleError(error, 'getTrades');
+    }
+  }
+
+  // ============ Modify and Cancel Operations (Task 4) ============
+
+  /**
+   * Modify an existing order with Kotak Neo
+   *
+   * @param request - Modification request with brokerOrderId and new parameters
+   * @returns Updated BrokerOrder
+   * @throws HttpException if order cannot be modified (already executed/cancelled)
+   */
+  async modifyOrder(request: ModifyOrderRequest): Promise<BrokerOrder> {
+    this.logger.log(`Modifying order: ${request.brokerOrderId}`);
+    this.checkCircuitBreaker();
+
+    if (!request.brokerOrderId || request.brokerOrderId.trim() === '') {
+      throw new HttpException('Broker order ID is required', HttpStatus.BAD_REQUEST);
+    }
+
+    const startTime = Date.now();
+
+    try {
+      const response = await this.executeWithRetryAndAuth(async () => {
+        const result = await this.httpClient.post('/Orders/2.0/quick/order/modify', {
+          nOrdNo: request.brokerOrderId,
+          pr: request.price?.toString(),
+          qt: request.quantity?.toString(),
+          pt: request.orderType ? this.mapOrderType(request.orderType) : undefined,
+          tp: request.triggerPrice?.toString(),
+        });
+        return result.data;
+      });
+
+      this.onSuccess();
+
+      const order = this.transformSingleOrderResponse(response);
+
+      await this.auditLogService.logBrokerCall(
+        'modify_order',
+        'system',
+        { ...request },
+        true,
+        undefined,
+        { latencyMs: Date.now() - startTime }
+      );
+
+      return order;
+    } catch (error: any) {
+      this.onFailure();
+
+      // Check for already-executed or already-cancelled errors
+      const message = error.response?.data?.message || error.message || '';
+      if (
+        message.toLowerCase().includes('already executed') ||
+        message.toLowerCase().includes('already cancelled') ||
+        message.toLowerCase().includes('cannot modify')
+      ) {
+        await this.auditLogService.logBrokerCall(
+          'modify_order',
+          'system',
+          { brokerOrderId: request.brokerOrderId },
+          false,
+          `Order cannot be modified: ${message}`,
+          { latencyMs: Date.now() - startTime }
+        );
+        throw new HttpException(
+          `Order cannot be modified: ${message}`,
+          HttpStatus.CONFLICT
+        );
+      }
+
+      await this.auditLogService.logBrokerCall(
+        'modify_order',
+        'system',
+        { brokerOrderId: request.brokerOrderId },
+        false,
+        error.message,
+        { latencyMs: Date.now() - startTime }
+      );
+      this.handleError(error, 'modifyOrder');
+    }
+  }
+
+  /**
+   * Cancel an existing order with Kotak Neo
+   *
+   * @param request - Cancellation request with brokerOrderId
+   * @returns Updated BrokerOrder with cancelled status
+   * @throws HttpException if order cannot be cancelled (already executed/cancelled)
+   */
+  async cancelOrder(request: CancelOrderRequest): Promise<BrokerOrder> {
+    this.logger.log(`Cancelling order: ${request.brokerOrderId}`);
+    this.checkCircuitBreaker();
+
+    if (!request.brokerOrderId || request.brokerOrderId.trim() === '') {
+      throw new HttpException('Broker order ID is required', HttpStatus.BAD_REQUEST);
+    }
+
+    const startTime = Date.now();
+
+    try {
+      const response = await this.executeWithRetryAndAuth(async () => {
+        const result = await this.httpClient.post('/Orders/2.0/quick/order/cancel', {
+          nOrdNo: request.brokerOrderId,
+        });
+        return result.data;
+      });
+
+      this.onSuccess();
+
+      const order = this.transformSingleOrderResponse(response);
+
+      await this.auditLogService.logBrokerCall(
+        'cancel_order',
+        'system',
+        { brokerOrderId: request.brokerOrderId },
+        true,
+        undefined,
+        { latencyMs: Date.now() - startTime }
+      );
+
+      return order;
+    } catch (error: any) {
+      this.onFailure();
+
+      // Check for already-executed or already-cancelled errors
+      const message = error.response?.data?.message || error.message || '';
+      if (
+        message.toLowerCase().includes('already executed') ||
+        message.toLowerCase().includes('already cancelled') ||
+        message.toLowerCase().includes('cannot cancel')
+      ) {
+        await this.auditLogService.logBrokerCall(
+          'cancel_order',
+          'system',
+          { brokerOrderId: request.brokerOrderId },
+          false,
+          `Order cannot be cancelled: ${message}`,
+          { latencyMs: Date.now() - startTime }
+        );
+        throw new HttpException(
+          `Order cannot be cancelled: ${message}`,
+          HttpStatus.CONFLICT
+        );
+      }
+
+      await this.auditLogService.logBrokerCall(
+        'cancel_order',
+        'system',
+        { brokerOrderId: request.brokerOrderId },
+        false,
+        error.message,
+        { latencyMs: Date.now() - startTime }
+      );
+      this.handleError(error, 'cancelOrder');
+    }
+  }
+
+  // ============ Response Transformation Helpers ============
+
+  /**
+   * Transform Kotak Neo orders list response to BrokerOrder[]
+   */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  private transformOrdersResponse(response: any): BrokerOrder[] {
+    const orders = response?.data || response?.orders || response || [];
+
+    if (!Array.isArray(orders)) {
+      return [];
+    }
+
+    return orders.map((order: KotakNeoRawOrderResponse) => this.mapRawToBrokerOrder(order));
+  }
+
+  /**
+   * Transform single order response to BrokerOrder
+   */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  private transformSingleOrderResponse(response: any): BrokerOrder {
+    const orderData = response?.data || response;
+    return this.mapRawToBrokerOrder(orderData);
+  }
+
+  /**
+   * Map a raw Kotak Neo order to standardized BrokerOrder
+   */
+  private mapRawToBrokerOrder(raw: KotakNeoRawOrderResponse): BrokerOrder {
+    const symbol = raw.tradingSymbol || raw.ts || '';
+    const action = (raw.transactionType || raw.tt || 'BUY').toUpperCase() as 'BUY' | 'SELL';
+    const quantity = parseInt(raw.quantity || raw.qt || '0', 10);
+    const filledQuantity = parseInt(raw.filledQuantity || raw.fq || '0', 10);
+    const price = parseFloat(raw.orderPrice || raw.pr || '0');
+    const averagePrice = raw.averagePrice ? parseFloat(raw.averagePrice) : undefined;
+    const orderType = this.mapToStandardOrderType(raw.orderType || raw.pt || 'L');
+    const productType = this.mapToStandardProductType(raw.productType || raw.pc || 'CNC');
+    const status = this.mapToStandardStatus(raw.orderStatus || raw.status || 'PENDING');
+
+    return {
+      brokerOrderId: raw.nOrdNo || raw.orderId || '',
+      symbol,
+      action,
+      quantity,
+      filledQuantity,
+      price,
+      averagePrice,
+      status,
+      orderType,
+      productType,
+      timestamp: raw.orderTimestamp ? new Date(raw.orderTimestamp) : new Date(),
+      statusMessage: raw.statusMessage || raw.message,
+    };
+  }
+
+  /**
+   * Transform Kotak Neo positions response to BrokerPosition[]
+   */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  private transformPositionsResponse(response: any): BrokerPosition[] {
+    const positions = response?.data || response?.positions || response || [];
+
+    if (!Array.isArray(positions)) {
+      return [];
+    }
+
+    return positions.map((pos: KotakNeoRawPositionResponse) => ({
+      symbol: pos.tradingSymbol || pos.ts || '',
+      quantity: parseInt(pos.netQuantity || pos.nq || '0', 10),
+      averagePrice: parseFloat(pos.averagePrice || pos.ap || '0'),
+      currentPrice: parseFloat(pos.lastTradedPrice || pos.ltp || '0'),
+      pnl: parseFloat(pos.pnl || '0'),
+      productType: this.mapToStandardProductType(pos.productType || pos.pc || 'CNC'),
+      exchange: pos.exchange || pos.es || 'NSE',
+    }));
+  }
+
+  /**
+   * Transform Kotak Neo holdings response to BrokerHolding[]
+   */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  private transformHoldingsResponse(response: any): BrokerHolding[] {
+    const holdings = response?.data || response?.holdings || response || [];
+
+    if (!Array.isArray(holdings)) {
+      return [];
+    }
+
+    return holdings.map((holding: KotakNeoRawHoldingResponse) => {
+      const quantity = parseInt(holding.quantity || holding.qt || '0', 10);
+      const averagePrice = parseFloat(holding.averagePrice || holding.ap || '0');
+      const ltp = parseFloat(holding.lastTradedPrice || holding.ltp || '0');
+      const currentValue = quantity * ltp;
+      const pnl = holding.pnl ? parseFloat(holding.pnl) : currentValue - quantity * averagePrice;
+
+      return {
+        symbol: holding.tradingSymbol || holding.ts || '',
+        quantity,
+        averagePrice,
+        currentValue,
+        pnl,
+        isin: holding.isin || '',
+      };
+    });
+  }
+
+  /**
+   * Transform Kotak Neo trades response to BrokerTrade[]
+   */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  private transformTradesResponse(response: any): BrokerTrade[] {
+    const trades = response?.data || response?.trades || response || [];
+
+    if (!Array.isArray(trades)) {
+      return [];
+    }
+
+    return trades.map((trade: KotakNeoRawTradeResponse) => ({
+      tradeId: trade.tradeId || trade.tid || '',
+      brokerOrderId: trade.orderId || trade.nOrdNo || '',
+      symbol: trade.tradingSymbol || trade.ts || '',
+      action: (trade.transactionType || trade.tt || 'BUY').toUpperCase() as 'BUY' | 'SELL',
+      quantity: parseInt(trade.quantity || trade.qt || '0', 10),
+      price: parseFloat(trade.tradePrice || trade.tp || '0'),
+      timestamp: trade.tradeTimestamp ? new Date(trade.tradeTimestamp) : new Date(),
+      exchange: trade.exchange || trade.es || 'NSE',
+    }));
+  }
+
+  /**
+   * Map Kotak Neo order type code to standard order type
+   */
+  private mapToStandardOrderType(kotakType: string): 'LIMIT' | 'MARKET' | 'SL' | 'SL-M' {
+    const mapping: Record<string, 'LIMIT' | 'MARKET' | 'SL' | 'SL-M'> = {
+      L: 'LIMIT',
+      LIMIT: 'LIMIT',
+      MKT: 'MARKET',
+      MARKET: 'MARKET',
+      SL: 'SL',
+      'SL-M': 'SL-M',
+    };
+    return mapping[kotakType.toUpperCase()] || 'LIMIT';
+  }
+
+  /**
+   * Map Kotak Neo product type code to standard product type
+   */
+  private mapToStandardProductType(
+    kotakType: string
+  ): 'DELIVERY' | 'INTRADAY' | 'MIS' | 'CNC' {
+    const mapping: Record<string, 'DELIVERY' | 'INTRADAY' | 'MIS' | 'CNC'> = {
+      CNC: 'CNC',
+      DELIVERY: 'DELIVERY',
+      MIS: 'MIS',
+      INTRADAY: 'INTRADAY',
+      NRML: 'DELIVERY',
+    };
+    return mapping[kotakType.toUpperCase()] || 'CNC';
+  }
+
+  /**
+   * Map Kotak Neo status string to standard status
+   */
+  private mapToStandardStatus(
+    kotakStatus: string
+  ): 'PENDING' | 'OPEN' | 'COMPLETE' | 'REJECTED' | 'CANCELLED' {
+    const upperStatus = kotakStatus.toUpperCase();
+    if (upperStatus === 'COMPLETE' || upperStatus === 'EXECUTED') return 'COMPLETE';
+    if (upperStatus === 'REJECTED' || upperStatus === 'FAILED') return 'REJECTED';
+    if (upperStatus === 'CANCELLED') return 'CANCELLED';
+    if (upperStatus === 'OPEN' || upperStatus === 'TRIGGER_PENDING') return 'OPEN';
+    return 'PENDING';
+  }
+
+  /**
+   * Check if the provider is properly authenticated
+   */
+  isAuthenticated(): boolean {
+    return !!this.sessionToken;
   }
 }

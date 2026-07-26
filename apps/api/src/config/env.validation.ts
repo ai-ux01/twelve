@@ -1,4 +1,4 @@
-import { IsString, IsNumber, IsEnum, IsUrl, IsOptional } from 'class-validator';
+import { IsString, IsNumber, IsEnum, IsUrl, IsOptional, IsBoolean, Min } from 'class-validator';
 import { plainToClass, Type } from 'class-transformer';
 import { validateSync } from 'class-validator';
 
@@ -94,6 +94,43 @@ export class EnvironmentVariables {
   @IsOptional()
   @IsString()
   NODE_ENV?: string;
+
+  // Historical Market Data Configuration
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber()
+  @Min(1)
+  MARKET_DATA_RETENTION_YEARS?: number;
+
+  @IsOptional()
+  @IsString()
+  STORE_TICKS?: string;
+
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber()
+  @Min(1)
+  TICK_BATCH_SIZE?: number;
+
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber()
+  @Min(100)
+  TICK_BATCH_INTERVAL_MS?: number;
+
+  @IsOptional()
+  @IsString()
+  SYNC_ON_STARTUP?: string;
+
+  @IsOptional()
+  @IsString()
+  RETENTION_CRON?: string;
+
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber()
+  @Min(1)
+  BROKER_RATE_LIMIT_RPS?: number;
 }
 
 /**

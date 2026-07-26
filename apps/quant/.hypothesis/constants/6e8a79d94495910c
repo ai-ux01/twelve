@@ -1,0 +1,4 @@
+# file: /Users/anshulkumar/Desktop/twelve/apps/quant/backtesting/indicator_engine.py
+# hypothesis_version: 6.141.1
+
+[0.0, 1.0, 2.0, 3.0, 100.0, 'ADX', 'ATR', 'EMA', 'MACD', 'RSI', 'VWAP', '_histogram', '_signal', 'crossed_above', 'crossed_below', 'distance', 'fast_period', 'histogram', 'macd', 'nan', 'period', 'signal', 'signal_period', 'slow_period']

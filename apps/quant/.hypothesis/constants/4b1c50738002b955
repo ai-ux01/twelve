@@ -1,0 +1,4 @@
+# file: /Users/anshulkumar/Desktop/twelve/apps/quant/agent_readiness/router.py
+# hypothesis_version: 6.141.1
+
+['/api/agent-readiness', '/{agent_id}', '/{agent_id}/advance', '/{agent_id}/health', '/{agent_id}/metrics', 'agent-readiness']

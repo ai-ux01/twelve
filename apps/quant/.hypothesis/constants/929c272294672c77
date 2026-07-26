@@ -1,0 +1,4 @@
+# file: /Users/anshulkumar/Desktop/twelve/apps/quant/paper_trading/trade_monitor.py
+# hypothesis_version: 6.141.1
+
+[30.0, '/', '1000', 'CLOSE', 'EXPIRED', 'LONG', 'MANUAL_EXIT', 'OPEN', 'OPTIONS_SCALPING', 'SHORT', 'STOP_HIT', 'SWING', 'TARGET_HIT', 'UPDATE', 'currentPrice', 'data', 'direction', 'entryPrice', 'exitPrice', 'exitReason', 'expiryDate', 'id', 'optionType', 'pageSize', 'quantity', 'status', 'stopLoss', 'strikePrice', 'symbol', 'target', 'tradeType', 'underlying']

@@ -1,0 +1,4 @@
+# file: /Users/anshulkumar/Desktop/twelve/apps/quant/paper_trading/router.py
+# hypothesis_version: 6.141.1
+
+[0.0, 15.0, 999999.0, 500, '/api/paper-trading', '/metrics', '/monitor/status', '10000', 'API_BASE_URL', 'SWING', 'data', 'direction', 'entryPrice', 'exitPrice', 'id', 'inf', 'pageSize', 'paper-trading', 'quantity', 'realizedPnL', 'status', 'stopLoss', 'symbol', 'target', 'tradeType', 'userId']

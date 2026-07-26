@@ -2,9 +2,10 @@ import type { Metadata } from 'next';
 import './globals.css';
 import { Inter } from 'next/font/google';
 import { cn } from '@/lib/utils';
-import Link from 'next/link';
 import { QueryProvider } from '@/components/providers/query-provider';
 import { ToastProvider } from '@/components/ui/toast';
+import { BrokerHeader } from '@/components/broker-header';
+import { SidebarNav } from '@/components/sidebar-nav';
 
 const inter = Inter({ subsets: ['latin'], variable: '--font-sans' });
 
@@ -26,36 +27,14 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                   <h1 className="text-2xl font-bold">ProfitTerminal</h1>
                   <p className="text-xs text-muted-foreground">AI Trading System</p>
                 </div>
-                <nav className="space-y-2">
-                  <Link
-                    href="/"
-                    className="block rounded-lg px-4 py-2 text-sm font-medium hover:bg-accent hover:text-accent-foreground transition-colors"
-                  >
-                    Dashboard
-                  </Link>
-                  <Link
-                    href="/analysis"
-                    className="block rounded-lg px-4 py-2 text-sm font-medium hover:bg-accent hover:text-accent-foreground transition-colors"
-                  >
-                    Analysis
-                  </Link>
-                  <Link
-                    href="/swing"
-                    className="block rounded-lg px-4 py-2 text-sm font-medium hover:bg-accent hover:text-accent-foreground transition-colors"
-                  >
-                    Swing Scanner
-                  </Link>
-                  <Link
-                    href="/portfolio"
-                    className="block rounded-lg px-4 py-2 text-sm font-medium hover:bg-accent hover:text-accent-foreground transition-colors"
-                  >
-                    Portfolio
-                  </Link>
-                </nav>
+                <SidebarNav />
               </aside>
 
               {/* Main Content */}
-              <main className="flex-1">{children}</main>
+              <div className="flex-1 flex flex-col">
+                <BrokerHeader />
+                <main className="flex-1">{children}</main>
+              </div>
             </div>
           </ToastProvider>
         </QueryProvider>

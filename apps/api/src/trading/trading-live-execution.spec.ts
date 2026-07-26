@@ -4,6 +4,8 @@ import { PrismaService } from '../database/prisma.service';
 import { RiskService } from '../risk/risk.service';
 import { PaperTradingService } from './paper-trading.service';
 import { KotakNeoProvider } from './brokers/kotak-neo.provider';
+import { AuditLogService } from '../audit/audit.service';
+import { KillSwitchService } from './kill-switch/kill-switch.service';
 
 describe('TradingService - Live Trade Execution', () => {
   let service: TradingService;
@@ -42,6 +44,20 @@ describe('TradingService - Live Trade Execution', () => {
           provide: KotakNeoProvider,
           useValue: {
             placeOrder: jest.fn(),
+          },
+        },
+        {
+          provide: AuditLogService,
+          useValue: {
+            logBrokerCall: jest.fn().mockResolvedValue('audit-id'),
+            log: jest.fn().mockResolvedValue('audit-id'),
+          },
+        },
+        {
+          provide: KillSwitchService,
+          useValue: {
+            isLiveTradingAllowed: jest.fn().mockReturnValue(true),
+            getState: jest.fn().mockReturnValue({ enabled: false, updatedBy: 'system', updatedAt: new Date() }),
           },
         },
       ],

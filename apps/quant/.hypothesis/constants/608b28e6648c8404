@@ -1,0 +1,4 @@
+# file: /Users/anshulkumar/Desktop/twelve/apps/quant/persistence/postgres_store.py
+# hypothesis_version: 6.141.1
+
+['0', 'DATABASE_URL', '__dataclass_fields__', '__datetime__', 'data', 'key', 'model_dump', 'python', 'quant_kv_store', 'value']

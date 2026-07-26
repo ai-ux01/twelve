@@ -1,7 +1,15 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, NotFoundException, ConflictException } from '@nestjs/common';
 import { PrismaService } from '../database/prisma.service';
-import { SignalDirection, TradeExecutionStatus, OptionType } from '@prisma/client';
+import {
+  SignalDirection,
+  OptionType,
+  PaperTradeStatus,
+  PaperTradeType,
+} from '@prisma/client';
 import { RiskService, TradeRequest } from '../risk/risk.service';
+import { CreatePaperTradeDto } from './dto/create-paper-trade.dto';
+import { ClosePaperTradeDto } from './dto/close-paper-trade.dto';
+import { PaperTradeFiltersDto } from './dto/paper-trade-filters.dto';
 
 export interface PaperTradeRequest {
   symbol: string;
@@ -125,7 +133,7 @@ export class PaperTradingService {
           stopLoss: tradeRequest.stopLoss || 0,
           target: tradeRequest.target || 0,
           simulatedSlippage: slippage,
-          status: TradeExecutionStatus.OPEN,
+          status: PaperTradeStatus.OPEN,
           currentPrice: executedPrice,
           unrealizedPnL: 0, // Initial PnL is 0 at entry
         },
@@ -280,7 +288,7 @@ export class PaperTradingService {
       where: { id: paperTradeId },
     });
 
-    if (!paperTrade || paperTrade.status !== TradeExecutionStatus.OPEN) {
+    if (!paperTrade || paperTrade.status !== PaperTradeStatus.OPEN) {
       this.logger.warn(`Paper trade ${paperTradeId} not found or not open`);
       return;
     }
@@ -323,7 +331,7 @@ export class PaperTradingService {
         };
       }
 
-      if (paperTrade.status !== TradeExecutionStatus.OPEN) {
+      if (paperTrade.status !== PaperTradeStatus.OPEN) {
         return {
           tradeId: paperTradeId,
           status: 'FAILED',
@@ -346,7 +354,7 @@ export class PaperTradingService {
       const updatedTrade = await this.prisma.paperTrade.update({
         where: { id: paperTradeId },
         data: {
-          status: TradeExecutionStatus.CLOSED,
+          status: PaperTradeStatus.MANUAL_EXIT,
           currentPrice: executedExitPrice,
           realizedPnL,
           exitedAt: new Date(),
@@ -405,11 +413,11 @@ export class PaperTradingService {
     return this.prisma.paperTrade.findMany({
       where: {
         userId,
-        status: TradeExecutionStatus.OPEN,
+        status: PaperTradeStatus.OPEN,
       },
       include: {
         Signal: true,
-        executions: true,
+        TradeExecution: true,
       },
       orderBy: {
         enteredAt: 'desc',
@@ -427,12 +435,203 @@ export class PaperTradingService {
       },
       include: {
         Signal: true,
-        executions: true,
       },
       orderBy: {
         enteredAt: 'desc',
       },
     });
+  }
+
+  // ============================================================
+  // Paper Trading System (Phase 11) - New Methods
+  // ============================================================
+
+  /**
+   * Create a new paper trade from AI decision or manual entry.
+   * Stores all AI context as JSON in the aiContext field.
+   */
+  async createPaperTrade(dto: CreatePaperTradeDto) {
+    const aiContext: Record<string, any> | undefined =
+      dto.originalPrompt || dto.aiResponse || dto.indicators || dto.trendlineAnalysis || dto.marketDataSnapshot
+        ? {
+            prompt: dto.originalPrompt || null,
+            response: dto.aiResponse || null,
+            indicators: dto.indicators || null,
+            trendlineAnalysis: dto.trendlineAnalysis || null,
+            marketDataSnapshot: dto.marketDataSnapshot || null,
+            promptVersion: dto.promptVersion || null,
+          }
+        : undefined;
+
+    const trade = await this.prisma.paperTrade.create({
+      data: {
+        userId: dto.userId,
+        symbol: dto.symbol,
+        direction: dto.direction as SignalDirection,
+        tradeType: dto.tradeType as PaperTradeType,
+        quantity: dto.quantity,
+        entryPrice: dto.entryPrice,
+        stopLoss: dto.stopLoss,
+        target: dto.target,
+        status: PaperTradeStatus.OPEN,
+        decisionId: dto.decisionId || null,
+        agentId: dto.agentId || null,
+        aiContext: aiContext as any,
+        probability: dto.probability || null,
+        riskRewardRatio: dto.riskRewardRatio || null,
+        strikePrice: dto.strikePrice || null,
+        optionType: dto.optionType || null,
+        expiryDate: dto.expiryDate ? new Date(dto.expiryDate) : null,
+        underlying: dto.underlying || null,
+        signalId: dto.signalId || null,
+      },
+    });
+
+    this.logger.log(
+      `Created paper trade ${trade.id}: ${dto.direction} ${dto.symbol} @ ${dto.entryPrice} (${dto.tradeType})`
+    );
+
+    return trade;
+  }
+
+  /**
+   * Close an open paper trade with exit data and P&L calculation.
+   * Returns 409 if trade is not OPEN, 404 if not found.
+   */
+  async closePaperTradeV2(tradeId: string, dto: ClosePaperTradeDto) {
+    const trade = await this.prisma.paperTrade.findUnique({ where: { id: tradeId } });
+
+    if (!trade) {
+      throw new NotFoundException(`Paper trade ${tradeId} not found`);
+    }
+
+    if (trade.status !== PaperTradeStatus.OPEN) {
+      throw new ConflictException(`Trade is already closed with status: ${trade.status}`);
+    }
+
+    // P&L: LONG = (exit - entry) × qty, SHORT = (entry - exit) × qty
+    const realizedPnL =
+      trade.direction === 'LONG'
+        ? (dto.exitPrice - trade.entryPrice) * trade.quantity
+        : (trade.entryPrice - dto.exitPrice) * trade.quantity;
+
+    const updatedTrade = await this.prisma.paperTrade.update({
+      where: { id: tradeId },
+      data: {
+        status: dto.exitReason as PaperTradeStatus,
+        exitPrice: dto.exitPrice,
+        realizedPnL,
+        exitedAt: new Date(),
+        currentPrice: dto.exitPrice,
+        unrealizedPnL: 0,
+      },
+    });
+
+    this.logger.log(`Closed paper trade ${tradeId} with status ${dto.exitReason}, P&L: ${realizedPnL.toFixed(2)}`);
+    return updatedTrade;
+  }
+
+  /**
+   * Cancel an open paper trade. Sets status to CANCELLED without exit data.
+   * Returns 409 if not OPEN, 404 if not found.
+   */
+  async cancelPaperTrade(tradeId: string) {
+    const trade = await this.prisma.paperTrade.findUnique({ where: { id: tradeId } });
+
+    if (!trade) {
+      throw new NotFoundException(`Paper trade ${tradeId} not found`);
+    }
+
+    if (trade.status !== PaperTradeStatus.OPEN) {
+      throw new ConflictException(`Trade is already closed with status: ${trade.status}`);
+    }
+
+    const updatedTrade = await this.prisma.paperTrade.update({
+      where: { id: tradeId },
+      data: {
+        status: PaperTradeStatus.CANCELLED,
+      },
+    });
+
+    this.logger.log(`Cancelled paper trade ${tradeId}`);
+    return updatedTrade;
+  }
+
+  /**
+   * Get paginated trades for a user with optional status and tradeType filters.
+   */
+  async getTradesForUser(userId: string, filters: PaperTradeFiltersDto) {
+    const page = filters.page || 1;
+    const pageSize = filters.pageSize || 20;
+    const skip = (page - 1) * pageSize;
+
+    const where: any = { userId };
+
+    if (filters.status && filters.status.length > 0) {
+      where.status = { in: filters.status };
+    }
+
+    if (filters.tradeType) {
+      where.tradeType = filters.tradeType;
+    }
+
+    const [trades, total] = await Promise.all([
+      this.prisma.paperTrade.findMany({
+        where,
+        orderBy: { enteredAt: 'desc' },
+        skip,
+        take: pageSize,
+      }),
+      this.prisma.paperTrade.count({ where }),
+    ]);
+
+    return {
+      data: trades,
+      total,
+      page,
+      pageSize,
+      totalPages: Math.ceil(total / pageSize),
+    };
+  }
+
+  /**
+   * Get all open trades for a user (new PaperTradeStatus-based).
+   */
+  async getOpenTradesV2(userId: string) {
+    return this.prisma.paperTrade.findMany({
+      where: {
+        userId,
+        status: PaperTradeStatus.OPEN,
+      },
+      orderBy: { enteredAt: 'desc' },
+    });
+  }
+
+  /**
+   * Update current price and recalculate unrealized P&L for a trade.
+   */
+  async updateTradePrice(tradeId: string, currentPrice: number) {
+    const trade = await this.prisma.paperTrade.findUnique({ where: { id: tradeId } });
+
+    if (!trade) {
+      throw new NotFoundException(`Paper trade ${tradeId} not found`);
+    }
+
+    // Calculate unrealized P&L
+    const unrealizedPnL =
+      trade.direction === 'LONG'
+        ? (currentPrice - trade.entryPrice) * trade.quantity
+        : (trade.entryPrice - currentPrice) * trade.quantity;
+
+    await this.prisma.paperTrade.update({
+      where: { id: tradeId },
+      data: {
+        currentPrice,
+        unrealizedPnL,
+      },
+    });
+
+    return { tradeId, currentPrice, unrealizedPnL };
   }
 
   /**
@@ -543,7 +742,7 @@ export class PaperTradingService {
           stopLoss: tradeRequest.stopLoss || 0,
           target: tradeRequest.target || 0,
           simulatedSlippage: slippage,
-          status: TradeExecutionStatus.OPEN,
+          status: PaperTradeStatus.OPEN,
           currentPrice: executedPrice,
           unrealizedPnL: 0, // Initial PnL is 0 at entry
         },

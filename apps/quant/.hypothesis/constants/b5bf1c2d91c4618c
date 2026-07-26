@@ -1,0 +1,4 @@
+# file: /Users/anshulkumar/Desktop/twelve/apps/quant/backtesting/position_manager.py
+# hypothesis_version: 6.141.1
+
+[0.0, 100.0, 'fixed', 'holding_period', 'percentage', 'stop_loss', 'target', 'trailing_stop']

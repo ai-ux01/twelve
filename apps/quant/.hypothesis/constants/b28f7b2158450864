@@ -1,0 +1,4 @@
+# file: /Users/anshulkumar/Desktop/twelve/apps/quant/persistence/__init__.py
+# hypothesis_version: 6.141.1
+
+['DATABASE_URL', 'JsonFileStore', 'PERSISTENCE_BACKEND', 'PostgresStore', 'get_store', 'json', 'postgres']

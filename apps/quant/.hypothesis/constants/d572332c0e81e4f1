@@ -1,0 +1,4 @@
+# file: /Users/anshulkumar/Desktop/twelve/apps/quant/trade_coach/router.py
+# hypothesis_version: 6.141.1
+
+['/analyze', '/api/trade-coach', '/behaviors', '/compare', 'User ID to analyze', 'default', 'no_data', 'trade-coach']

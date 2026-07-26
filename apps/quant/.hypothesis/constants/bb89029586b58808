@@ -1,0 +1,4 @@
+# file: /Users/anshulkumar/Desktop/twelve/apps/quant/prompt_library/store.py
+# hypothesis_version: 6.141.1
+
+['average_r', 'category', 'content', 'created_at', 'executed_at', 'expectancy', 'id', 'input_text', 'is_archived', 'max_drawdown', 'metrics', 'name', 'output_text', 'profit_factor', 'prompt_id', 'prompt_library', 'prompts', 'test_executions', 'trades_count', 'updated_at', 'version', 'versions', 'win_rate']

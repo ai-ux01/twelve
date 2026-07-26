@@ -1,0 +1,4 @@
+# file: /Users/anshulkumar/Desktop/twelve/apps/quant/backtesting/metrics.py
+# hypothesis_version: 6.141.1
+
+[0.0, 1.0, 100.0, 252.0, 365.0, 252, 'inf']

@@ -1,0 +1,4 @@
+# file: /Users/anshulkumar/Desktop/twelve/apps/quant/scalper/repository.py
+# hypothesis_version: 6.141.1
+
+[2.0, 5.0, 70.0, 100, 1000, 'atm_iv', 'atr', 'call_oi', 'call_oi_change', 'ema_15', 'ema_5', 'entry_price', 'expiry_date', 'hold_reason', 'id', 'lot_size', 'macd', 'macd_signal', 'oi_interpretation', 'pcr', 'probability', 'put_oi', 'put_oi_change', 'rationale', 'resistance_level', 'risk_reward_ratio', 'rsi', 'signal_type', 'spot_price', 'stop_loss', 'strike_price', 'support_level', 'target_price', 'timestamp', 'trend', 'trendline_status', 'underlying', 'value', 'volume_ratio', 'vwap']

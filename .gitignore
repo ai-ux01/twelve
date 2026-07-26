@@ -68,6 +68,9 @@ docker-compose.override.yml
 *.tsbuildinfo
 .tsbuildinfo
 
+# Quant engine persisted data
+apps/quant/data/*.json
+
 # Misc
 .turbo/
 .cache/

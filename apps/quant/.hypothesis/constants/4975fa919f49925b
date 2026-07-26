@@ -1,0 +1,4 @@
+# file: /Users/anshulkumar/Desktop/twelve/apps/quant/trade_analysis/router.py
+# hypothesis_version: 6.141.1
+
+[9999.99, 400, 422, '/ai/analyze', '/api/trade-analysis', '/broker/kotak-neo', '/import/csv', '/metrics', '/metrics/grouped', '/trades', 'CSV Import', 'Grouping dimension', 'Manual Entry', 'User ID', 'alternatives', 'coming_soon', 'default', 'description', 'dimension', 'endpoint', 'error', 'inf', 'message', 'method', 'status', 'success', 'trade-analysis', 'utf-8']

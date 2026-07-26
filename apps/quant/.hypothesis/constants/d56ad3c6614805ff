@@ -1,0 +1,4 @@
+# file: /Users/anshulkumar/Desktop/twelve/apps/quant/trade_analysis/performance_calculator.py
+# hypothesis_version: 6.141.1
+
+[0.0, 100, 'inf', 'mae_max', 'mae_mean', 'mae_median', 'mfe_max', 'mfe_mean', 'mfe_median']

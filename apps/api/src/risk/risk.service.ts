@@ -149,7 +149,7 @@ export class RiskService {
     // Validate max open positions
     const openPositions = await this.prisma.position.count({
       where: {
-        portfolio: { userId },
+        Portfolio: { userId },
         status: 'OPEN',
       },
     });

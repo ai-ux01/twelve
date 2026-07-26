@@ -1,0 +1,4 @@
+# file: /Users/anshulkumar/Desktop/twelve/apps/quant/agents/router.py
+# hypothesis_version: 6.141.1
+
+[404, '/api/agents', '/{agent_id}', '/{agent_id}/actions', '/{agent_id}/memory', '/{agent_id}/outcomes', '/{agent_id}/policies', '/{agent_id}/tasks', 'Agent deleted', 'Filter by agent type', 'Filter by status', 'Memory entry deleted', 'Policy not found', 'Task not found', 'agent_id', 'agents', 'detail', 'memory_id', 'policy_id', 'task_id']

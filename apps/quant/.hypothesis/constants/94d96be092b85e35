@@ -1,0 +1,4 @@
+# file: /Users/anshulkumar/Desktop/twelve/apps/quant/trade_coach/source_comparator.py
+# hypothesis_version: 6.141.1
+
+[1.5, 9999.99, 'Backtest', 'Live', 'Paper', 'actual', 'backtest', 'demo', 'historical', 'inf', 'live', 'paper', 'real', 'replay', 'simulated', 'virtual']

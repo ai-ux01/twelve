@@ -1,0 +1,4 @@
+# file: /Users/anshulkumar/Desktop/twelve/apps/quant/calculators/greeks.py
+# hypothesis_version: 6.141.1
+
+[0.07, 0.5, 1.0, 100.0, 365.0, 3600, 'CALL', 'delta', 'expiry_date', 'gamma', 'option_type', 'rho', 'strike_price', 'theta', 'vega', 'volatility']

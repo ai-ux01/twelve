@@ -1,3 +1,12 @@
+import os
+from pathlib import Path
+from dotenv import load_dotenv
+
+# Load .env from project root
+_env_path = Path(__file__).resolve().parent.parent.parent / ".env"
+if _env_path.exists():
+    load_dotenv(_env_path)
+
 from fastapi import FastAPI, HTTPException, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
 from datetime import datetime
@@ -145,10 +154,43 @@ class EndpointRateLimiter:
 # Initialize rate limiter for options endpoints: 10 requests per minute
 options_rate_limiter = EndpointRateLimiter(max_requests=10, window_seconds=60)
 
+# === Paper Trading Monitor Lifespan ===
+from contextlib import asynccontextmanager
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """FastAPI lifespan: start/stop the trade monitor."""
+    import os
+    from paper_trading.trade_monitor import TradeMonitor
+    from paper_trading.router import set_trade_monitor
+
+    api_base_url = os.environ.get("API_BASE_URL", "http://localhost:4000")
+    monitor_interval = int(os.environ.get("TRADE_MONITOR_INTERVAL", "30"))
+    monitor_enabled = os.environ.get("TRADE_MONITOR_ENABLED", "true").lower() == "true"
+
+    trade_monitor = TradeMonitor(
+        api_base_url=api_base_url,
+        interval=monitor_interval,
+    )
+    set_trade_monitor(trade_monitor)
+
+    if monitor_enabled:
+        await trade_monitor.start()
+        logger.info(f"Trade monitor started: interval={monitor_interval}s, api={api_base_url}")
+
+    yield
+
+    if trade_monitor.is_running:
+        await trade_monitor.stop()
+        logger.info("Trade monitor stopped during shutdown")
+
+
 app = FastAPI(
     title="ProfitTerminal Quant Engine",
     description="Deterministic quantitative analysis for trading decisions",
     version="1.0.0",
+    lifespan=lifespan,
 )
 
 # Enable CORS for both frontend and backend
@@ -162,6 +204,58 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Register options scalper router
+from scalper.router import router as scalper_router
+from scalper.websocket import ws_router as scalper_ws_router
+
+app.include_router(scalper_router)
+app.include_router(scalper_ws_router)
+
+# Register AI Trading Lab router
+from trading_lab.router import router as trading_lab_router
+
+app.include_router(trading_lab_router)
+
+# Register Paper Trading router
+from paper_trading.router import router as paper_trading_router
+
+app.include_router(paper_trading_router)
+
+# Register Trade Analysis router
+from trade_analysis.router import router as trade_analysis_router
+
+app.include_router(trade_analysis_router)
+
+# Register Prompt Library router
+from prompt_library.router import router as prompt_library_router
+
+app.include_router(prompt_library_router)
+
+# Register Backtesting Engine router
+from backtesting.router import router as backtesting_router
+
+app.include_router(backtesting_router)
+
+# Register Trade Coach router
+from trade_coach.router import router as trade_coach_router
+
+app.include_router(trade_coach_router)
+
+# Register Agents router
+from agents.router import router as agents_router
+
+app.include_router(agents_router)
+
+# Register Agent Readiness router
+from agent_readiness.router import router as agent_readiness_router
+
+app.include_router(agent_readiness_router)
+
+# Register Market Data router (MongoDB candle data)
+from market_data.router import router as market_data_router
+
+app.include_router(market_data_router)
 
 
 # Request models
@@ -2039,6 +2133,236 @@ def get_scanner():
     return _scanner_instance
 
 
+@app.post("/api/swing/scan")
+async def api_swing_scan(request: dict = None) -> dict:
+    """
+    Frontend-compatible swing scan endpoint.
+
+    Accepts: {minScore?: number, maxResults?: number, userId?: string}
+    Returns: {scannedCount, candidatesFound, candidates: [{symbol, score, trend, setupType, entry, stopLoss, target, ...}]}
+    """
+    from market_data.mongo_provider import MongoMarketDataProvider
+
+    body = request or {}
+    min_score = body.get("minScore", 60)
+    max_results = body.get("maxResults", 20)
+
+    # Get popular symbols from MongoDB (top traded by volume)
+    provider = MongoMarketDataProvider()
+    provider.connect()
+
+    # Use a curated list of liquid large-cap symbols for scanning
+    scan_symbols = [
+        "RELIANCE", "TCS", "INFY", "HDFCBANK", "ICICIBANK",
+        "HINDUNILVR", "ITC", "SBIN", "BHARTIARTL", "KOTAKBANK",
+        "LT", "AXISBANK", "ASIANPAINT", "MARUTI", "TITAN",
+        "SUNPHARMA", "BAJFINANCE", "WIPRO", "HCLTECH", "ULTRACEMCO",
+        "NESTLEIND", "TATAMOTORS", "TATASTEEL", "POWERGRID", "NTPC",
+        "ONGC", "COALINDIA", "ADANIENT", "ADANIPORTS", "TECHM",
+    ]
+
+    candidates = []
+    scanned = 0
+
+    for symbol in scan_symbols:
+        candles = provider.get_ohlcv(symbol=symbol, timeframe="day", limit=200)
+        if not candles or len(candles) < 50:
+            continue
+        scanned += 1
+
+        # Quick technical scoring
+        closes = [c["close"] for c in candles]
+        highs = [c["high"] for c in candles]
+        lows = [c["low"] for c in candles]
+        volumes = [c["volume"] for c in candles]
+
+        current_price = closes[-1]
+
+        # Calculate basic indicators for scoring
+        try:
+            from calculators.rsi import calculate_rsi
+            from calculators.moving_averages import calculate_sma, calculate_ema
+            from calculators.adx import calculate_adx
+            from calculators.atr import calculate_atr
+
+            rsi = calculate_rsi(closes, period=14)
+            sma_50 = calculate_sma(closes, period=50)
+            sma_200 = calculate_sma(closes, period=200) if len(closes) >= 200 else sma_50
+            ema_20 = calculate_ema(closes, period=20)
+            adx_result = calculate_adx(highs, lows, closes, period=14)
+            adx = adx_result["adx"]
+            atr = calculate_atr(highs, lows, closes, period=14)
+
+            # Scoring logic
+            score = 50.0
+
+            # RSI scoring (40-60 neutral, <30 oversold=buy, >70 overbought)
+            if 40 <= rsi <= 60:
+                score += 5
+            elif 30 <= rsi <= 40:
+                score += 15  # Oversold bounce potential
+            elif rsi < 30:
+                score += 10
+
+            # Trend: price above SMA50 and SMA200
+            if current_price > sma_50:
+                score += 10
+            if current_price > sma_200:
+                score += 10
+
+            # ADX trend strength
+            if adx > 25:
+                score += 10
+            elif adx > 20:
+                score += 5
+
+            # EMA proximity (near support)
+            ema_distance_pct = abs(current_price - ema_20) / current_price * 100
+            if ema_distance_pct < 2:
+                score += 5
+
+            # Volume confirmation
+            avg_vol = sum(volumes[-20:]) / 20 if len(volumes) >= 20 else sum(volumes) / len(volumes)
+            if volumes[-1] > avg_vol * 1.2:
+                score += 5
+
+            # Cap at 100
+            score = min(score, 100.0)
+
+            if score >= min_score:
+                # Determine trend
+                trend = "BULLISH" if current_price > sma_50 else "BEARISH" if current_price < sma_50 else "NEUTRAL"
+
+                # Calculate entry/stop/target
+                entry = current_price
+                stop_loss = current_price - (atr * 2)
+                target = current_price + (atr * 3)
+                setup_type = "PULLBACK" if ema_distance_pct < 2 else "BREAKOUT" if current_price > max(closes[-20:-1]) else "MOMENTUM"
+
+                candidates.append({
+                    "symbol": symbol,
+                    "score": round(score, 1),
+                    "trend": trend,
+                    "setupType": setup_type,
+                    "entry": round(entry, 2),
+                    "stopLoss": round(stop_loss, 2),
+                    "target": round(target, 2),
+                    "riskReward": round((target - entry) / (entry - stop_loss), 2) if entry > stop_loss else 0,
+                    "rsi": round(rsi, 1),
+                    "adx": round(adx, 1),
+                    "currentPrice": round(current_price, 2),
+                    "volume": volumes[-1],
+                })
+        except Exception as e:
+            logger.debug(f"Swing scan skipping {symbol}: {e}")
+            continue
+
+    provider.close()
+
+    # Sort by score descending and limit
+    candidates.sort(key=lambda x: x["score"], reverse=True)
+    candidates = candidates[:max_results]
+
+    return {
+        "scannedCount": scanned,
+        "candidatesFound": len(candidates),
+        "candidates": candidates,
+    }
+
+
+@app.post("/api/swing/analyze/{symbol}")
+async def api_swing_analyze_symbol(symbol: str) -> dict:
+    """
+    Analyze a specific symbol for swing trading using MongoDB data.
+    Returns detailed technical analysis for the given stock.
+    """
+    from market_data.mongo_provider import MongoMarketDataProvider
+
+    provider = MongoMarketDataProvider()
+    provider.connect()
+
+    candles = provider.get_ohlcv(symbol=symbol.upper(), timeframe="day", limit=200)
+    provider.close()
+
+    if not candles or len(candles) < 50:
+        return {"status": "error", "message": f"Insufficient data for {symbol}. Need at least 50 daily candles."}
+
+    closes = [c["close"] for c in candles]
+    highs = [c["high"] for c in candles]
+    lows = [c["low"] for c in candles]
+    volumes = [c["volume"] for c in candles]
+    current_price = closes[-1]
+
+    try:
+        from calculators.rsi import calculate_rsi
+        from calculators.macd import calculate_macd
+        from calculators.moving_averages import calculate_sma, calculate_ema
+        from calculators.adx import calculate_adx
+        from calculators.atr import calculate_atr
+        from calculators.vwap import calculate_vwap
+        from calculators.bollinger import calculate_bollinger_bands
+
+        rsi = calculate_rsi(closes, period=14)
+        macd_result = calculate_macd(closes, fast_period=12, slow_period=26, signal_period=9)
+        sma_20 = calculate_sma(closes, period=20)
+        sma_50 = calculate_sma(closes, period=50)
+        sma_200 = calculate_sma(closes, period=200) if len(closes) >= 200 else None
+        ema_20 = calculate_ema(closes, period=20)
+        adx_result = calculate_adx(highs, lows, closes, period=14)
+        atr = calculate_atr(highs, lows, closes, period=14)
+        vwap = calculate_vwap(highs, lows, closes, volumes)
+        upper_bb, middle_bb, lower_bb = calculate_bollinger_bands(closes, period=20, num_std=2.0)
+
+        # Determine trend
+        trend = "BULLISH" if current_price > sma_50 else "BEARISH"
+        if sma_200 and current_price > sma_200:
+            trend = "STRONG_BULLISH" if trend == "BULLISH" else "BULLISH"
+
+        # Support/Resistance
+        recent_lows = sorted(lows[-20:])
+        recent_highs = sorted(highs[-20:], reverse=True)
+        support = recent_lows[1] if len(recent_lows) > 1 else lows[-1]
+        resistance = recent_highs[1] if len(recent_highs) > 1 else highs[-1]
+
+        return {
+            "status": "success",
+            "message": f"Swing analysis for {symbol.upper()}",
+            "symbol": symbol.upper(),
+            "currentPrice": round(current_price, 2),
+            "trend": trend,
+            "indicators": {
+                "rsi": round(rsi, 2),
+                "macd": round(macd_result["value"], 4),
+                "macdSignal": round(macd_result["signal"], 4),
+                "macdHistogram": round(macd_result["histogram"], 4),
+                "sma20": round(sma_20, 2),
+                "sma50": round(sma_50, 2),
+                "sma200": round(sma_200, 2) if sma_200 else None,
+                "ema20": round(ema_20, 2),
+                "adx": round(adx_result["adx"], 2),
+                "atr": round(atr, 2),
+                "vwap": round(vwap, 2),
+                "bollingerUpper": round(upper_bb, 2),
+                "bollingerMiddle": round(middle_bb, 2),
+                "bollingerLower": round(lower_bb, 2),
+            },
+            "levels": {
+                "support": round(support, 2),
+                "resistance": round(resistance, 2),
+                "entry": round(current_price, 2),
+                "stopLoss": round(current_price - atr * 2, 2),
+                "target": round(current_price + atr * 3, 2),
+            },
+            "volume": {
+                "current": volumes[-1],
+                "average20": round(sum(volumes[-20:]) / 20, 0),
+                "ratio": round(volumes[-1] / (sum(volumes[-20:]) / 20), 2) if sum(volumes[-20:]) > 0 else 0,
+            },
+        }
+    except Exception as e:
+        return {"status": "error", "message": f"Analysis failed for {symbol}: {str(e)}"}
+
+
 @app.post("/quant/swing/scan")
 async def scan_swing_universe(
     symbols: List[str],
@@ -2140,39 +2464,44 @@ async def scan_swing_universe(
             scanner.clear_cache()
             logger.info("Cache cleared before scan")
 
-        # Mock market data provider for now
-        # In production, this would call the actual Kite Connect API
-        def mock_provider(symbol: str, timeframe: str, lookback_days: int):
-            """
-            Mock market data provider for demonstration.
-            In production, replace with actual API call.
-            """
-            from datetime import datetime, timedelta
-            from models.market_data import OHLCVData
+        # MongoDB market data provider
+        from market_data.mongo_provider import MongoMarketDataProvider
 
-            # Generate sample data
-            base_time = datetime.utcnow() - timedelta(days=lookback_days)
+        _scan_provider = MongoMarketDataProvider()
+        _scan_provider.connect()
+
+        def mongo_provider(symbol: str, timeframe: str, lookback_days: int):
+            """
+            MongoDB market data provider for swing scanning.
+            Fetches real OHLCV data from the candles collection.
+            """
+            from datetime import timedelta
+
+            tf = "day" if timeframe in ("1d", "day", "daily") else timeframe
+            candles = _scan_provider.get_ohlcv(symbol=symbol, timeframe=tf, limit=lookback_days)
+
+            if not candles:
+                return []
+
             data = []
-
-            base_price = 2450.0 + hash(symbol) % 500  # Different price per symbol
-
-            for i in range(lookback_days):
+            for c in candles:
+                ts = c.get("timestamp")
+                if isinstance(ts, (int, float)):
+                    ts = datetime.utcfromtimestamp(ts)
                 data.append(
                     OHLCVData(
-                        timestamp=base_time + timedelta(days=i),
-                        open=base_price + i * 0.5,
-                        high=base_price + i * 0.5 + 20,
-                        low=base_price + i * 0.5 - 15,
-                        close=base_price + i * 0.5 + 10,
-                        volume=1000000 + i * 10000,
+                        timestamp=ts,
+                        open=c["open"],
+                        high=c["high"],
+                        low=c["low"],
+                        close=c["close"],
+                        volume=c["volume"],
                     )
                 )
 
             return data
 
-        # TODO: Replace with actual market data provider
-        # market_data_provider = KiteConnectProvider()
-        market_data_provider = mock_provider
+        market_data_provider = mongo_provider
 
         # Run scan
         logger.info(f"Starting swing scan for {len(symbols)} symbols")

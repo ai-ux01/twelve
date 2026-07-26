@@ -1,0 +1,4 @@
+# file: /Users/anshulkumar/Desktop/twelve/apps/quant/trading_lab/response_formatter.py
+# hypothesis_version: 6.141.1
+
+[' | ', 'POSITION SIZING:', 'RISK METRICS:', '⏸️', '⚠️  WARNINGS:\n', '📈', '📉']

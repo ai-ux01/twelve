@@ -1,0 +1,4 @@
+# file: /Users/anshulkumar/Desktop/twelve/apps/quant/agent_readiness/service.py
+# hypothesis_version: 6.141.1
+
+[0.2, 0.4, 1.0, 403, 409, 'agent_readiness', 'ai_health_connected', 'autonomous_blocked', 'backtest_passed', 'detail', 'expectancy_positive', 'gate_results', 'out_of_sample_passed', 'python', 'quant_engine_running', 'shadow_mode_passed', 'trade_count_gte_20', 'unmet_criteria', 'walk_forward_passed', 'win_rate_above_40pct']

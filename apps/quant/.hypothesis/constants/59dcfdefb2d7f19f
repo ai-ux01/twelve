@@ -1,0 +1,4 @@
+# file: /Users/anshulkumar/Desktop/twelve/apps/quant/backtesting/rule_evaluator.py
+# hypothesis_version: 6.141.1
+
+[1e-10, 'CROSSES_ABOVE', 'CROSSES_BELOW', 'EQ', 'GT', 'GTE', 'LT', 'LTE']

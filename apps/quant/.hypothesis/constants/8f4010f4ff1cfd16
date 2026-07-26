@@ -1,0 +1,4 @@
+# file: /Users/anshulkumar/Desktop/twelve/apps/quant/trade_coach/behavior_detector.py
+# hypothesis_version: 6.141.1
+
+[1.0, 1.2, 1.5, 2.0, 3.0, 50.0, 100.0, 1000000.0, 100, '%Y-%m-%d', '%Y-W%W']

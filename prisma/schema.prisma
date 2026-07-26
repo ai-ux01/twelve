@@ -254,6 +254,10 @@ model Instrument {
   strikePrice       Float?
   expiry            DateTime?
   optionType        OptionType?
+  instrumentToken   String?
+  exchangeSegment   String?
+  lotSize           Int?
+  tickSize          Float?
   isActive          Boolean             @default(true)
   createdAt         DateTime            @default(now())
   updatedAt         DateTime @updatedAt
@@ -268,6 +272,8 @@ model Instrument {
   @@index([assetType])
   @@index([exchange, assetType])
   @@index([symbol])
+  @@index([instrumentToken])
+  @@index([underlying, expiry, optionType])
 }
 
 model LiveTrade {
@@ -405,26 +411,47 @@ model PaperTrade {
   signalId          String?
   symbol            String
   direction         SignalDirection
+  tradeType         PaperTradeType       @default(SWING)
   quantity          Int
   entryPrice        Float
   stopLoss          Float
   target            Float
   simulatedSlippage Float                @default(0)
   simulatedFees     Float                @default(0)
-  status            TradeExecutionStatus @default(OPEN)
+  status            PaperTradeStatus     @default(OPEN)
   currentPrice      Float?
   unrealizedPnL     Float?
+  exitPrice         Float?
   realizedPnL       Float?
-  enteredAt         DateTime             @default(now())
   exitedAt          DateTime?
+
+  // AI context
+  decisionId        String?
+  agentId           String?
+  aiContext         Json?
+  probability       Float?
+  riskRewardRatio   Float?
+
+  // Options-specific
+  strikePrice       Float?
+  optionType        String?
+  expiryDate        DateTime?
+  underlying        String?
+
+  // Metadata
+  enteredAt         DateTime             @default(now())
+  updatedAt         DateTime             @updatedAt
+
+  // Relations
   Signal            Signal?              @relation(fields: [signalId], references: [id])
   User              User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
   TradeExecution    TradeExecution[]
   TradeJournal      TradeJournal[]
 
-  @@index([signalId])
-  @@index([symbol])
   @@index([userId, status])
+  @@index([userId, tradeType])
+  @@index([symbol])
+  @@index([status])
 }
 
 model Portfolio {
@@ -695,8 +722,22 @@ model User {
   Prompt         Prompt[]
   RiskProfile    RiskProfile?
   TradeJournal   TradeJournal[]
+  Watchlist      Watchlist[]
 
   @@index([email])
+}
+
+model Watchlist {
+  id        String   @id @default(uuid())
+  userId    String
+  name      String
+  symbols   String[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  User      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, name])
+  @@index([userId])
 }
 
 enum AIProvider {
@@ -906,6 +947,21 @@ enum TradeExecutionStatus {
   STOPPED
   CANCELLED
   FAILED
+}
+
+enum PaperTradeStatus {
+  OPEN
+  TARGET_HIT
+  STOP_HIT
+  MANUAL_EXIT
+  EXPIRED
+  CANCELLED
+}
+
+enum PaperTradeType {
+  SWING
+  INTRADAY
+  OPTIONS_SCALPING
 }
 
 enum TradeType {

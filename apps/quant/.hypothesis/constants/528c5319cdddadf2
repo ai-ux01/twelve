@@ -1,0 +1,4 @@
+# file: /Users/anshulkumar/Desktop/twelve/apps/quant/agent_readiness/models.py
+# hypothesis_version: 6.141.1
+
+[0.0, 1.0, 'AUTONOMOUS', 'BACKTEST_VALIDATED', 'CONTROLLED_LIVE', 'DRAFT', 'KNOWLEDGE_READY', 'PAPER_TRADING', 'SHADOW_MODE', 'active', 'connected', 'degraded', 'disconnected', 'error', 'failed', 'inactive', 'not_started', 'passed', 'pending', 'running', 'stopped']

@@ -1,0 +1,4 @@
+# file: /Users/anshulkumar/Desktop/twelve/apps/quant/trade_coach/report_generator.py
+# hypothesis_version: 6.141.1
+
+[0.3, 0.5, 1.0, 1.5, 2.0, 2000, 'AGGREGATE METRICS:', 'AI_MODEL', 'OPENAI_API_KEY', '```', '```json', 'best_conditions', 'best_setups', 'common_mistakes', 'content', 'gpt-4', 'inf', 'market_regime', 'overtrading', 'poor_risk_reward', 'recommendations', 'revenge_trading', 'role', 'setup', 'strategy', 'strengths', 'system', 'time_of_day', 'user', 'weaknesses', 'worst_setups', '∞']

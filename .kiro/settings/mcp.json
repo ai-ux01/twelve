@@ -1,0 +1,24 @@
+{
+  "mcpServers": {
+    "kotak-neo": {
+      "command": "npx",
+      "args": ["tsx", "src/index.ts"],
+      "cwd": "./mcp-servers/kotak-neo",
+      "env": {},
+      "disabled": false,
+      "autoApprove": [
+        "get_connection_status",
+        "get_holdings",
+        "get_positions",
+        "get_orders",
+        "get_limits",
+        "get_stock_price",
+        "get_spot_prices",
+        "search_symbols",
+        "scan_swing_trades",
+        "analyze_stock",
+        "ai_trading_prompt"
+      ]
+    }
+  }
+}

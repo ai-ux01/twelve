@@ -1,0 +1,4 @@
+# file: /Users/anshulkumar/Desktop/twelve/apps/quant/backtesting/cost_model.py
+# hypothesis_version: 6.141.1
+
+[0.0, 100.0, 'fixed', 'percentage']

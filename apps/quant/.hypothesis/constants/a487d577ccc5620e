@@ -1,0 +1,4 @@
+# file: /Users/anshulkumar/Desktop/twelve/apps/quant/trading_lab/recommendation_engine.py
+# hypothesis_version: 6.141.1
+
+[0.0, 0.01, 0.02, 0.2, 1.0, 1.5, 2.0, 50.0, 60.0, 100.0, 1000000.0, 100, '+00:00', 'AI_MODEL', 'BUY', 'HOLD', 'OPENAI_API_KEY', 'SELL', 'Z', 'ai_reasoning', 'chunk', 'content', 'entry_price', 'formatted_response', 'gpt-4', 'is_high_risk', 'is_low_confidence', 'json_object', 'message', 'position_size', 'probability', 'rationale', 'recommendation', 'risk_reward_ratio', 'role', 'signal', 'status', 'step', 'stop_loss', 'system', 'target_price', 'text', 'type', 'user', 'warnings']

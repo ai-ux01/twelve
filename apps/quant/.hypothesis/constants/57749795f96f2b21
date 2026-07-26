@@ -1,0 +1,4 @@
+# file: /Users/anshulkumar/Desktop/twelve/apps/quant/prompt_library/router.py
+# hypothesis_version: 6.141.1
+
+[201, 404, 422, '/api/prompts', '/categories', '/compare', '/{prompt_id}', '/{prompt_id}/archive', 'executed_at', 'input_text', 'output_text', 'prompt-library', 'prompt_id', 'version']

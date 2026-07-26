@@ -1,0 +1,4 @@
+# file: /Users/anshulkumar/Desktop/twelve/apps/quant/prompt_library/models.py
+# hypothesis_version: 6.141.1
+
+[0.0, 100.0, 'AGENT_SUPERVISOR', 'BACKTEST_ANALYST', 'INTRADAY', 'MARKET_REGIME', 'MASTER_AGENT', 'OPTIONS_SCALPING', 'RISK_REVIEW', 'STRATEGY_BUILDER', 'STRATEGY_RESEARCH', 'SWING_HUNTER', 'TRADE_DETECTIVE']

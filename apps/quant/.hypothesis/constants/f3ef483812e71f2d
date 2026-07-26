@@ -1,0 +1,4 @@
+# file: /Users/anshulkumar/Desktop/twelve/apps/quant/trading_lab/router.py
+# hypothesis_version: 6.141.1
+
+[10.0, 100, 200, 400, '+00:00', '/action', '/api/ai-trading', '/history', '/prompt', 'ANALYZE_MARKET', 'Analysis stopped', 'BUY', 'BUY_ON_PAPER', 'Cache-Control', 'Clarification needed', 'Connection', 'Error occurred', 'IGNORE', 'Page number', 'Records per page', 'STOP', 'Session identifier', 'X-Accel-Buffering', 'Z', 'action', 'ai-trading-lab', 'analyze_market', 'chunk', 'clarification', 'data: ', 'decision_id', 'detail', 'done', 'error', 'formatted_response', 'ignored', 'intent_detection', 'keep-alive', 'message', 'no', 'no-cache', 'original_prompt', 'probability', 'risk_reward_ratio', 'session_id', 'signal', 'status', 'status_code', 'step', 'stopped', 'text', 'text/event-stream', 'v1.0']

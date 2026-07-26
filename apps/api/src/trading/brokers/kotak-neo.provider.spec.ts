@@ -2,6 +2,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { HttpException, HttpStatus } from '@nestjs/common';
 import { KotakNeoProvider, PlaceOrderRequest } from './kotak-neo.provider';
 import { ConfigService } from '../../config/config.service';
+import { AuditLogService } from '../../audit/audit.service';
 import axios from 'axios';
 
 // Mock axios
@@ -11,6 +12,7 @@ const mockedAxios = axios as jest.Mocked<typeof axios>;
 describe('KotakNeoProvider', () => {
   let provider: KotakNeoProvider;
   let mockAxiosInstance: Record<string, jest.Mock>;
+  let mockAuditLogService: Partial<AuditLogService>;
 
   beforeEach(async () => {
     // Create mock axios instance
@@ -19,7 +21,15 @@ describe('KotakNeoProvider', () => {
       get: jest.fn(),
     };
 
-    mockedAxios.create = jest.fn().mockReturnValue(mockAxiosInstance);
+    (mockedAxios.create as jest.Mock) = jest.fn().mockReturnValue({
+      ...mockAxiosInstance,
+      defaults: { headers: {} },
+    });
+
+    mockAuditLogService = {
+      logBrokerCall: jest.fn().mockResolvedValue('audit-id'),
+      log: jest.fn().mockResolvedValue('audit-id'),
+    };
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -29,7 +39,15 @@ describe('KotakNeoProvider', () => {
           useValue: {
             kotakApiKey: 'test-api-key',
             kotakApiSecret: 'test-api-secret',
+            kotakNeoConsumerKey: 'test-consumer-key',
+            kotakNeoConsumerSecret: 'test-consumer-secret',
+            kotakNeoAccessToken: 'test-access-token',
+            kotakNeoSessionToken: 'test-session-token',
           },
+        },
+        {
+          provide: AuditLogService,
+          useValue: mockAuditLogService,
         },
       ],
     }).compile();
@@ -309,8 +327,9 @@ describe('KotakNeoProvider', () => {
       expect(mockAxiosInstance.post).toHaveBeenCalledTimes(2);
     });
 
-    it('should not retry on authentication error', async () => {
-      mockAxiosInstance.post.mockRejectedValue({
+    it('should retry on authentication error after token refresh', async () => {
+      // First call returns 401
+      mockAxiosInstance.post.mockRejectedValueOnce({
         isAxiosError: true,
         response: {
           status: 401,
@@ -319,10 +338,27 @@ describe('KotakNeoProvider', () => {
         message: 'Request failed with status code 401',
       });
 
-      await expect(provider.placeOrder(validOrderRequest)).rejects.toThrow(HttpException);
+      // Token refresh call (via static axios.post)
+      mockedAxios.post = jest.fn().mockResolvedValueOnce({
+        data: { token: 'new-session-token' },
+      });
 
-      // Should not retry on auth error
-      expect(mockAxiosInstance.post).toHaveBeenCalledTimes(1);
+      // Retry succeeds
+      mockAxiosInstance.post.mockResolvedValueOnce({
+        data: {
+          stat: 'Ok',
+          nOrdNo: '240125000123460',
+          stCode: 200,
+          message: 'Order placed successfully',
+        },
+      });
+
+      const result = await provider.placeOrder(validOrderRequest);
+
+      expect(result.success).toBe(true);
+      expect(result.brokerOrderId).toBe('240125000123460');
+      // Called twice: original (401) + retry after refresh
+      expect(mockAxiosInstance.post).toHaveBeenCalledTimes(2);
     });
   });
 

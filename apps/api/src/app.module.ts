@@ -18,6 +18,7 @@ import { WebSocketModule } from './websocket';
 import { SwingModule } from './swing/swing.module';
 import { IntradayModule } from './intraday/intraday.module';
 import { OptionsModule } from './options/options.module';
+import { MarketFeedModule } from './market-feed/market-feed.module';
 
 /**
  * Main Application Module
@@ -55,6 +56,7 @@ import { OptionsModule } from './options/options.module';
     SwingModule,
     IntradayModule,
     OptionsModule,
+    MarketFeedModule,
   ],
   controllers: [AppController],
   providers: [

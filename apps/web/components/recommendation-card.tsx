@@ -136,6 +136,7 @@ export function RecommendationCard({
         </div>
 
         {/* Quantitative Analysis Summary */}
+        {quantData?.indicators && (
         <div className="space-y-3">
           <div className="flex items-center gap-2">
             <ChartBar className="size-4 text-muted-foreground" />
@@ -144,31 +145,32 @@ export function RecommendationCard({
           <div className="grid grid-cols-2 gap-3 rounded-lg border bg-card p-3 text-sm">
             <div>
               <p className="text-muted-foreground">RSI</p>
-              <p className="font-semibold">{quantData.indicators.rsi.toFixed(2)}</p>
+              <p className="font-semibold">{quantData.indicators.rsi?.toFixed(2) ?? '—'}</p>
             </div>
             <div>
               <p className="text-muted-foreground">MACD</p>
-              <p className="font-semibold">{quantData.indicators.macd.value.toFixed(2)}</p>
+              <p className="font-semibold">{quantData.indicators.macd?.value?.toFixed(2) ?? '—'}</p>
             </div>
             <div>
               <p className="text-muted-foreground">SMA 50</p>
-              <p className="font-semibold">₹{quantData.indicators.sma_50.toFixed(2)}</p>
+              <p className="font-semibold">{quantData.indicators.sma_50 ? `₹${quantData.indicators.sma_50.toFixed(2)}` : '—'}</p>
             </div>
             <div>
               <p className="text-muted-foreground">SMA 200</p>
-              <p className="font-semibold">₹{quantData.indicators.sma_200.toFixed(2)}</p>
+              <p className="font-semibold">{quantData.indicators.sma_200 ? `₹${quantData.indicators.sma_200.toFixed(2)}` : '—'}</p>
             </div>
             <div>
               <p className="text-muted-foreground">Support Levels</p>
-              <p className="font-semibold">{quantData.supportResistance.length}</p>
+              <p className="font-semibold">{quantData.supportResistance?.length ?? 0}</p>
             </div>
             <div>
               <p className="text-muted-foreground">Trendlines</p>
-              <p className="font-semibold">{quantData.trendlines.length}</p>
+              <p className="font-semibold">{quantData.trendlines?.length ?? 0}</p>
             </div>
           </div>
 
           {/* Bollinger Bands */}
+          {quantData.indicators.bollingerBands && (
           <div className="rounded-lg border bg-card p-3 text-sm">
             <p className="text-muted-foreground mb-2">Bollinger Bands</p>
             <div className="flex justify-between">
@@ -183,6 +185,7 @@ export function RecommendationCard({
               </span>
             </div>
           </div>
+          )}
 
           {/* Options Greeks (if available) */}
           {quantData.optionsGreeks && (
@@ -209,6 +212,7 @@ export function RecommendationCard({
             </div>
           )}
         </div>
+        )}
 
         {/* AI Reasoning */}
         <div className="space-y-2">

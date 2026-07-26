@@ -17,6 +17,7 @@ import { SwingScanner } from '@/components/swing-scanner';
 import { SwingAnalysisPanel } from '@/components/swing-analysis-panel';
 import { SwingRecommendationCard } from '@/components/swing-recommendation-card';
 import { SwingCandidate, SwingScanResponse } from '@/lib/api-client';
+import { kotakApi } from '@/lib/kotak-api';
 
 /**
  * Swing Scanner Page
@@ -62,6 +63,56 @@ export default function SwingScannerPage() {
 
   const handlePaperTradeError = (error: Error) => {
     setErrorMessage(error.message);
+  };
+
+  const handleQuickOrder = async (symbol: string, tt: 'B' | 'S') => {
+    if (!kotakApi.getSessionId()) {
+      setErrorMessage('Connect Kotak Neo first (from header) to place live orders.');
+      return;
+    }
+
+    const action = tt === 'B' ? 'BUY' : 'SELL';
+
+    // Check if market is open
+    const now = new Date();
+    const ist = new Date(now.toLocaleString('en-US', { timeZone: 'Asia/Kolkata' }));
+    const hours = ist.getHours();
+    const mins = ist.getMinutes();
+    const isWeekday = ist.getDay() >= 1 && ist.getDay() <= 5;
+    const isMarketOpen = isWeekday && ((hours === 9 && mins >= 15) || (hours > 9 && hours < 15) || (hours === 15 && mins <= 30));
+
+    let price = '0';
+    let orderType = 'MKT';
+    let isAmo = false;
+
+    if (!isMarketOpen) {
+      isAmo = true;
+      orderType = 'L';
+      const inputPrice = window.prompt(`Market closed — AMO Limit Order for ${symbol}.\n\nEnter price:`);
+      if (!inputPrice) return;
+      price = inputPrice;
+    }
+
+    const confirmed = window.confirm(
+      `⚠️ ${isAmo ? 'AMO ' : ''}LIVE ORDER\n\n${action} ${symbol}\nQty: 1 | ${isAmo ? 'AMO Limit' : 'Market'} ${price !== '0' ? `@ ₹${price}` : ''} | CNC\n\nThis uses REAL money. Continue?`
+    );
+    if (!confirmed) return;
+
+    try {
+      const result = await kotakApi.placeOrder({
+        am: isAmo ? 'YES' : 'NO', dq: '0', es: 'nse_cm', mp: '0',
+        pc: 'CNC', pf: 'N', pr: price, pt: orderType,
+        qt: '1', rt: 'DAY', tp: '0', ts: `${symbol}-EQ`, tt,
+      });
+
+      if (result?.stat === 'Ok' || result?.nOrdNo) {
+        setSuccessMessage(`${action} order placed for ${symbol}! Order ID: ${result.nOrdNo}`);
+      } else {
+        setErrorMessage(result?.emsg || `${action} order failed for ${symbol}`);
+      }
+    } catch (err: any) {
+      setErrorMessage(err.message || 'Order failed');
+    }
   };
 
   const getTrendBadgeColor = (trend: string) => {
@@ -126,6 +177,7 @@ export default function SwingScannerPage() {
                       <TableHead>Score</TableHead>
                       <TableHead>Trend</TableHead>
                       <TableHead className="text-right">R:R</TableHead>
+                      <TableHead className="text-right">Action</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -152,6 +204,22 @@ export default function SwingScannerPage() {
                           <Badge variant={candidate.riskReward >= 2 ? 'default' : 'secondary'}>
                             {candidate.riskReward.toFixed(2)}
                           </Badge>
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <div className="flex gap-1 justify-end" onClick={(e) => e.stopPropagation()}>
+                            <button
+                              className="px-2 py-1 text-xs font-medium rounded bg-green-600 text-white hover:bg-green-700"
+                              onClick={() => handleQuickOrder(candidate.symbol, 'B')}
+                            >
+                              BUY
+                            </button>
+                            <button
+                              className="px-2 py-1 text-xs font-medium rounded bg-red-600 text-white hover:bg-red-700"
+                              onClick={() => handleQuickOrder(candidate.symbol, 'S')}
+                            >
+                              SELL
+                            </button>
+                          </div>
                         </TableCell>
                       </TableRow>
                     ))}

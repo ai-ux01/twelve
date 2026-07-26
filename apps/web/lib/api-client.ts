@@ -430,15 +430,62 @@ class ApiClient {
 
   /**
    * Submit a natural language prompt for analysis
-   * POST /prompt
+   * POST /api/ai-trading/prompt (quant engine port 8000)
    *
    * Orchestrates: Prompt parsing → Market data → Quant analysis → AI recommendation
    */
   async submitPrompt(prompt: string): Promise<PromptResponse> {
-    return this.fetch<PromptResponse>('/prompt', {
+    const url = 'http://localhost:8000/api/ai-trading/prompt';
+    const response = await fetch(url, {
       method: 'POST',
-      body: JSON.stringify({ prompt }),
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ prompt, response_mode: 'QUICK', session_id: 'analysis-page' }),
     });
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`API request failed: ${response.status} ${response.statusText} - ${errorText}`);
+    }
+    // Parse SSE stream to extract recommendation
+    const text = await response.text();
+    const recommendationMatch = text.match(/event: recommendation\ndata: (.+)/);
+    if (recommendationMatch) {
+      const recData = JSON.parse(recommendationMatch[1]);
+      return {
+        rawPrompt: prompt,
+        parsed: {
+          symbols: [],
+          timeframe: 'swing',
+          intent: recData.signal === 'BUY' ? 'buy' : recData.signal === 'SELL' ? 'sell' : 'analyze',
+          assetType: 'stock',
+        },
+        recommendation: {
+          id: crypto.randomUUID(),
+          symbol: recData.rationale?.match(/([A-Z]{2,})/)?.[1] || 'MARKET',
+          action: recData.signal || 'HOLD',
+          entryPrice: recData.entry_price || 0,
+          stopLoss: recData.stop_loss || 0,
+          target: recData.target_price || 0,
+          confidence: (recData.probability || 0) / 100,
+          reasoning: recData.rationale || 'Analysis complete.',
+          riskReward: recData.risk_reward_ratio || 0,
+        },
+      };
+    }
+    return {
+      rawPrompt: prompt,
+      parsed: { symbols: [], timeframe: 'swing', intent: 'analyze', assetType: 'stock' },
+      recommendation: {
+        id: crypto.randomUUID(),
+        symbol: 'MARKET',
+        action: 'HOLD',
+        entryPrice: 0,
+        stopLoss: 0,
+        target: 0,
+        confidence: 0,
+        reasoning: 'Unable to parse recommendation. Try the AI Trading Lab (/ai-trading) for streaming analysis.',
+        riskReward: 0,
+      },
+    };
   }
 
   // ==========================================================================
@@ -660,29 +707,53 @@ class ApiClient {
 
   /**
    * Scan stock universe for swing trading opportunities
-   * POST /swing/scan
+   * POST /api/swing/scan (on quant engine port 8000)
    *
    * Scans configured stock universe and returns top-ranked candidates
    * based on technical analysis and deterministic scoring.
    */
   async scanSwingUniverse(request: SwingScanRequest): Promise<SwingScanResponse> {
-    return this.fetch<SwingScanResponse>('/swing/scan', {
-      method: 'POST',
-      body: JSON.stringify(request),
-    });
+    const url = 'http://localhost:8000/api/swing/scan';
+    try {
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(request),
+      });
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`API request failed: ${response.status} ${response.statusText} - ${errorText}`);
+      }
+      return await response.json();
+    } catch (error) {
+      if (error instanceof Error) throw error;
+      throw new Error(`Network error: ${String(error)}`);
+    }
   }
 
   /**
    * Analyze a specific symbol for swing trading
-   * POST /swing/analyze/:symbol
+   * POST /api/swing/analyze/:symbol (on quant engine port 8000)
    *
    * Performs deep analysis on a specific stock for swing trading opportunities
    */
   async analyzeSwingSymbol(symbol: string, userId?: string): Promise<SwingAnalysisResponse> {
-    return this.fetch<SwingAnalysisResponse>(`/swing/analyze/${symbol}`, {
-      method: 'POST',
-      body: JSON.stringify({ userId }),
-    });
+    const url = `http://localhost:8000/api/swing/analyze/${symbol}`;
+    try {
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId }),
+      });
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`API request failed: ${response.status} ${response.statusText} - ${errorText}`);
+      }
+      return await response.json();
+    } catch (error) {
+      if (error instanceof Error) throw error;
+      throw new Error(`Network error: ${String(error)}`);
+    }
   }
 
   /**
